@@ -12,7 +12,6 @@ VALTSTD := $(TSTD)/valgrind_tests
 INCF := -I $(INCD)
 CFLAGS := -O2 -g -Wall -Werror
 DEPFLAGS := -MD
-LDFLAGS := -lcrypto
 ECFLAGS := -DEXTRA_CREDIT
 EXEC := smash
 EXECF := $(BIND)/$(EXEC)
@@ -78,4 +77,4 @@ $(BLDD)/%.o: $(SRCD)/%.c
 	$(CC) $(INCF) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
 
 $(EXECF): $(ALL_OBJF)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) -o $@ $^
