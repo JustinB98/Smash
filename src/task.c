@@ -10,6 +10,7 @@ static void free_word_list(WORD_LIST *word_list) {
 	while (word_list != NULL) {
 		current = word_list;
 		word_list = word_list->next;
+		if (current->word != NULL) free(current->word);
 		free(current);
 	}
 }
@@ -38,6 +39,28 @@ free_task:
 	return -1;
 }
 
+static char *get_exit_code() {
+	char *exit_code_str = malloc(5);
+	if (exit_code_str == NULL) goto get_exit_code_finish;
+	if (sprintf(exit_code_str, "%d", 44) < 0) goto get_exit_code_failed;
+	goto get_exit_code_finish;
+get_exit_code_failed:
+	free(exit_code_str);
+get_exit_code_finish:
+	return exit_code_str;
+}
+
+static char *process_word(char *word) {
+	if (*word == '$') {
+		if (!strcmp(word, "$?")) return get_exit_code();
+		char *var = getenv(word + 1);
+		var = var == NULL ? "" : var;
+		return strdup(var);
+	} else {
+		return strdup(word);
+	}
+}
+
 TASK *parse_task(char *string_to_parse) {
 	TASK *task;
 	WORD_LIST *word_list;
@@ -45,13 +68,14 @@ TASK *parse_task(char *string_to_parse) {
 	task->full_command = string_to_parse;
 	char *s = string_to_parse;
 	word_list->next = NULL;
+	word_list->word = NULL;
 	WORD_LIST *prev = NULL;
 	task->word_list = word_list;
 	size_t n_words = 0;
 	char *token = NULL;
 	while ((token = strtok_r(s, " ", &s))) {
 		if (*token == '\n') continue;
-		word_list->word = token;
+		word_list->word = process_word(token);
 		WORD_LIST *next_list = malloc(sizeof(WORD_LIST));
 		if (next_list == NULL) {
 			free_task(task);
