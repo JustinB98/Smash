@@ -25,6 +25,10 @@ void free_task(TASK *task) {
 static int allocate_task_variables(TASK **task, char **string_to_parse, WORD_LIST **word_list) {
 	*task = malloc(sizeof(TASK));
 	if (*task == NULL) goto free_task;
+	TASK *task_ptr = *task;
+	task_ptr->stdin_path = NULL;
+	task_ptr->stdout_path = NULL;
+	task_ptr->stderr_path = NULL;
 	*string_to_parse = strdup(*string_to_parse);
 	if (string_to_parse == NULL) goto free_string_to_parse;
 	*word_list = malloc(sizeof(WORD_LIST));
@@ -61,6 +65,21 @@ static char *process_word(char *word) {
 	}
 }
 
+/* Returns 1 if token was a redirection. 0 if not */
+static int handle_redirection(TASK *task, char *token) {
+	if (token[0] == '2' && token[1] == '>') {
+		task->stderr_path = token + 2;
+		return 1;
+	} else if (token[0] == '>') {
+		task->stdout_path = token + 1;
+		return 1;
+	} else if (token[0] == '<') {
+		task->stdin_path = token + 1;
+		return 1;
+	}
+	return 0;
+}
+
 TASK *parse_task(char *string_to_parse) {
 	TASK *task;
 	WORD_LIST *word_list;
@@ -75,6 +94,7 @@ TASK *parse_task(char *string_to_parse) {
 	char *token = NULL;
 	while ((token = strtok_r(s, " ", &s))) {
 		if (*token == '\n') continue;
+		if (handle_redirection(task, token) > 0) continue;
 		word_list->word = process_word(token);
 		if (word_list->word == NULL) goto parse_task_failed;
 		WORD_LIST *next_list = malloc(sizeof(WORD_LIST));
