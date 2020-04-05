@@ -27,7 +27,9 @@ int get_input(FILE *fstream, char **malloced_ptr, size_t *n, void (*sig_handler)
 		else break; /* ready for input */
 	}
 	sigprocmask(SIG_SETMASK, &oset, NULL);
-	if (getline(malloced_ptr, n, fstream) < 0) return -1;
+	ssize_t bytes_read;
+	if ((bytes_read = getline(malloced_ptr, n, fstream)) < 0) return -1;
+	(*malloced_ptr)[bytes_read - 1] = '\0';
 	sigprocmask(SIG_SETMASK, &oset, NULL);
 	run_signal_handler(sig_handler);
 	return 0;
