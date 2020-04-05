@@ -40,7 +40,7 @@ free_task:
 }
 
 static char *get_exit_code() {
-	char *exit_code_str = malloc(5);
+	char *exit_code_str = malloc(10);
 	if (exit_code_str == NULL) goto get_exit_code_finish;
 	if (sprintf(exit_code_str, "%d", 44) < 0) goto get_exit_code_failed;
 	goto get_exit_code_finish;
@@ -76,11 +76,9 @@ TASK *parse_task(char *string_to_parse) {
 	while ((token = strtok_r(s, " ", &s))) {
 		if (*token == '\n') continue;
 		word_list->word = process_word(token);
+		if (word_list->word == NULL) goto parse_task_failed;
 		WORD_LIST *next_list = malloc(sizeof(WORD_LIST));
-		if (next_list == NULL) {
-			free_task(task);
-			return TASK_FAILED;
-		}
+		if (next_list == NULL) goto parse_task_failed;
 		word_list->next = next_list;
 		prev = word_list;
 		word_list = next_list;
@@ -97,4 +95,7 @@ TASK *parse_task(char *string_to_parse) {
 		free(word_list);
 		return task;
 	}
+parse_task_failed:
+	free_task(task);
+	return TASK_FAILED;
 }
