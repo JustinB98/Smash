@@ -60,9 +60,9 @@ static void dup_fds(int stdin_fd, int stdout_fd, int stderr_fd) {
 	dup_fd(stderr_fd, STDERR_FILENO, "stderr");
 }
 
-static void fill_argv(WORD_LIST *list, char **argv) {
+static void fill_argv(WORD_LIST *list, size_t n_words, char **argv) {
 	WORD_LIST *current = list;
-	while (current) {
+	for (size_t i = 0; i < n_words; ++i) {
 		*argv = current->word;
 		++argv;
 		current = current->next;
@@ -75,7 +75,7 @@ static void child_process_start_job(TASK *task, char *envp[]) {
 	fill_redirection_fds(task, &stdin_fd, &stdout_fd, &stderr_fd);
 	dup_fds(stdin_fd, stdout_fd, stderr_fd);
 	char *argv[task->n_words];
-	fill_argv(task->word_list, argv);
+	fill_argv(task->word_list, task->n_words, argv);
 	if (execvp(argv[0], argv) < 0) {
 		fprintf(stderr, "Could not find program: %s\n", argv[0]);
 		exit(127);
@@ -90,8 +90,10 @@ void start_task(TASK *task, char *envp[]) {
 	} else if (pid == 0) {
 		child_process_start_job(task, envp);
 	}
-	int exit_status;
-	waitpid(pid, &exit_status, 0);
-	exit_code = WEXITSTATUS(exit_status);
+	if (task->fg) {
+		int exit_status;
+		waitpid(pid, &exit_status, 0);
+		exit_code = WEXITSTATUS(exit_status);
+	}
 }
 
