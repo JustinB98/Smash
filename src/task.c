@@ -93,8 +93,10 @@ TASK *parse_task(char *string_to_parse) {
 	task->word_list = word_list;
 	size_t n_words = 0;
 	char *token = NULL;
+	char *last_token = NULL;
 	while ((token = strtok_r(s, " ", &s))) {
 		if (*token == '\n') continue;
+		last_token = token;
 		if (handle_redirection(task, token) > 0) continue;
 		word_list->word = process_word(token);
 		if (word_list->word == NULL) goto parse_task_failed;
@@ -106,6 +108,14 @@ TASK *parse_task(char *string_to_parse) {
 		word_list->next = NULL;
 		++n_words;
 	}
+	int fg = 1;
+	if (last_token != NULL) {
+		if (!strcmp(last_token, "&")) {
+			--n_words;
+			fg = 0;
+		}
+	}
+	task->fg = fg;
 	task->n_words = n_words;
 	if (prev == NULL) {
 		/* nothing entered, return 0 */
