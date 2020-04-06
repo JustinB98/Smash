@@ -10,6 +10,7 @@
 
 #include "task.h"
 #include "job.h"
+#include "exit_code.h"
 
 static void safe_open_file_for_reading(char *path, int *fd, int default_value) {
 	if (path == NULL) {
@@ -77,7 +78,7 @@ static void child_process_start_job(TASK *task, char *envp[]) {
 	fill_argv(task->word_list, argv);
 	if (execvp(argv[0], argv) < 0) {
 		fprintf(stderr, "Could not find program: %s\n", argv[0]);
-		exit(EXIT_FAILURE);
+		exit(127);
 	}
 }
 
@@ -89,5 +90,8 @@ void start_task(TASK *task, char *envp[]) {
 	} else if (pid == 0) {
 		child_process_start_job(task, envp);
 	}
-	waitpid(pid, NULL, 0);
+	int exit_status;
+	waitpid(pid, &exit_status, 0);
+	exit_code = WEXITSTATUS(exit_status);
 }
+

@@ -4,6 +4,7 @@
 #include <errno.h>
 
 #include "task.h"
+#include "exit_code.h"
 
 static void free_word_list(WORD_LIST *word_list) {
 	WORD_LIST *current = NULL;
@@ -46,7 +47,7 @@ free_task:
 static char *get_exit_code() {
 	char *exit_code_str = malloc(10);
 	if (exit_code_str == NULL) goto get_exit_code_finish;
-	if (sprintf(exit_code_str, "%d", 44) < 0) goto get_exit_code_failed;
+	if (sprintf(exit_code_str, "%d", exit_code) < 0) goto get_exit_code_failed;
 	goto get_exit_code_finish;
 get_exit_code_failed:
 	free(exit_code_str);

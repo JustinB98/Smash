@@ -5,6 +5,7 @@
 #include "input.h"
 #include "task.h"
 #include "job.h"
+#include "exit_code.h"
 
 void print_task_info(TASK *task) {
 	WORD_LIST *list = task->word_list;
@@ -22,6 +23,7 @@ int main(int argc, const char *argv[], char *env[]) {
 	size_t n = getpagesize();
 	char *buf = malloc(n);
 	int result = 0;
+	exit_code = 0;
 	while (1) {
 		printf("smash> ");
 		fflush(stdout);
