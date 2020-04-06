@@ -6,6 +6,7 @@
 #include "task.h"
 #include "job.h"
 #include "exit_code.h"
+#include "signal_handlers.h"
 
 void print_task_info(TASK *task) {
 	WORD_LIST *list = task->word_list;
@@ -24,10 +25,11 @@ int main(int argc, const char *argv[], char *env[]) {
 	char *buf = malloc(n);
 	int result = 0;
 	exit_code = 0;
+	signal_handlers_init();
 	while (1) {
 		printf("smash> ");
 		fflush(stdout);
-		result = get_input(stdin, &buf, &n, NULL);
+		result = get_input(stdin, &buf, &n, child_reaper);
 		if (result < 0) break;
 		TASK *task = parse_task(buf);
 		if (task == TASK_EMPTY) continue;
