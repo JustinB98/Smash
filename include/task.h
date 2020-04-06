@@ -1,5 +1,6 @@
 #ifndef TASK_H
 #define TASK_H 
+#include <stdlib.h>
 
 typedef struct word_list {
 	char *word;
