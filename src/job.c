@@ -95,7 +95,8 @@ void start_task(TASK *task, char *envp[]) {
 	if (task->fg) {
 		int exit_status;
 		waitpid(pid, &exit_status, 0);
-		exit_code = WEXITSTATUS(exit_status);
+		int exit_code = WEXITSTATUS(exit_status);
+		set_exit_code(exit_code);
 	}
 }
 

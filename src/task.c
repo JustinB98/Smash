@@ -44,10 +44,10 @@ free_task:
 	return -1;
 }
 
-static char *get_exit_code() {
+static char *get_exit_code_str() {
 	char *exit_code_str = malloc(10);
 	if (exit_code_str == NULL) goto get_exit_code_finish;
-	if (sprintf(exit_code_str, "%d", exit_code) < 0) goto get_exit_code_failed;
+	if (sprintf(exit_code_str, "%d", get_exit_code()) < 0) goto get_exit_code_failed;
 	goto get_exit_code_finish;
 get_exit_code_failed:
 	free(exit_code_str);
@@ -57,7 +57,7 @@ get_exit_code_finish:
 
 static char *process_word(char *word) {
 	if (*word == '$') {
-		if (!strcmp(word, "$?")) return get_exit_code();
+		if (!strcmp(word, "$?")) return get_exit_code_str();
 		char *var = getenv(word + 1);
 		var = var == NULL ? "" : var;
 		return strdup(var);
