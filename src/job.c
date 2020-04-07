@@ -11,6 +11,7 @@
 #include "task.h"
 #include "job.h"
 #include "exit_code.h"
+#include "smash_commands.h"
 
 static void safe_open_file_for_reading(char *path, int *fd, int default_value) {
 	if (path == NULL) {
@@ -83,6 +84,7 @@ static void child_process_start_job(TASK *task, char *envp[]) {
 }
 
 void start_task(TASK *task, char *envp[]) {
+	if (execute_smash_command(task) != 0) return;
 	pid_t pid = fork();
 	if (pid < 0) {
 		fprintf(stderr, "Could not spawn process\n");
