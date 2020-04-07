@@ -7,6 +7,7 @@
 #include "job.h"
 #include "exit_code.h"
 #include "signal_handlers.h"
+#include "smash_commands.h"
 
 void print_task_info(TASK *task) {
 	WORD_LIST *list = task->word_list;
@@ -34,6 +35,9 @@ int main(int argc, const char *argv[], char *env[]) {
 		TASK *task = parse_task(buf);
 		if (task == TASK_EMPTY) continue;
 		else if (task == TASK_FAILED) break;
+		int exit_smash = should_exit(task);
+		if (exit_smash > 0) break;
+		else if (exit_smash < 0) continue;
 		start_task(task, env);
 		free_task(task);
 	}
