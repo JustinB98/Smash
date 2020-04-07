@@ -97,6 +97,7 @@ TASK *parse_task(char *string_to_parse) {
 	while ((token = strtok_r(s, " ", &s))) {
 		if (*token == '\n') continue;
 		last_token = token;
+		if (prev == NULL && token[0] == '#') break;
 		if (handle_redirection(task, token) > 0) continue;
 		word_list->word = process_word(token);
 		if (word_list->word == NULL) goto parse_task_failed;
