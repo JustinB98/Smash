@@ -26,11 +26,10 @@ static void install_signal_handler(int sig, void (*handler)(int)) {
 static void sigint_handler(int signum) {
 	sigint_flag = 1;
 }
-#if 0
+
 static void sigstop_handler(int signum) {
 	sigstop_flag = 1;
 }
-#endif
 
 static void sigchld_handler(int signum) {
 	sigchld_flag = 1;
@@ -38,8 +37,7 @@ static void sigchld_handler(int signum) {
 
 static void install_signal_handlers() {
 	install_signal_handler(SIGINT, sigint_handler);
-	/* TODO how to detect SIGSTOP signal */
-	// install_signal_handler(SIGSTOP, sigstop_handler);
+	install_signal_handler(SIGTSTP, sigstop_handler);
 	install_signal_handler(SIGCHLD, sigchld_handler);
 }
 
