@@ -7,11 +7,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 #include "task.h"
 #include "job.h"
 #include "exit_code.h"
 #include "smash_commands.h"
+#include "signal_handlers.h"
 
 static void safe_open_file_for_reading(char *path, int *fd, int default_value) {
 	if (path == NULL) {
@@ -85,6 +87,10 @@ static void child_process_start_job(TASK *task, char *envp[]) {
 
 void start_task(TASK *task, char *envp[]) {
 	if (execute_smash_command(task) != 0) return;
+	sigset_t set, oset;
+	sigfillset(&set);
+	sigprocmask(SIG_SETMASK, &set, &oset);
+	sigstop_flag = 0;
 	pid_t pid = fork();
 	if (pid < 0) {
 		fprintf(stderr, "Could not spawn process\n");
@@ -93,10 +99,23 @@ void start_task(TASK *task, char *envp[]) {
 		child_process_start_job(task, envp);
 	}
 	if (task->fg) {
-		int exit_status;
-		waitpid(pid, &exit_status, 0);
-		int exit_code = WEXITSTATUS(exit_status);
-		set_exit_code(exit_code);
+		while (1) {
+			sigsuspend(&oset);
+			if (sigstop_flag) break;
+			int exit_status;
+			pid_t wait_pid_result = waitpid(pid, &exit_status, WNOHANG);
+			child_reaper();
+			if (wait_pid_result == pid) {
+				int exit_code = WEXITSTATUS(exit_status);
+				set_exit_code(exit_code);
+				break;
+			}
+			if (sigint_flag) kill(pid, SIGKILL);
+		}
+	} else {
+		kill(pid, SIGTTIN);
 	}
+	sigprocmask(SIG_SETMASK, &oset, NULL);
+	sigstop_flag = 0;
 }
 
