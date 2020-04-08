@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
+#include <string.h>
 
 #include "input.h"
 #include "task.h"
@@ -40,9 +42,12 @@ int main(int argc, char *argv[], char *env[]) {
 	TASK *task = NULL;
 	FILE *file_input = has_file_input() ? open_file_input() : stdin;
 	while (1) {
-		if (file_input == stdin) printf("smash> ");
-		fflush(stdout);
+		if (file_input == stdin) {
+			printf("smash> ");
+			fflush(stdout);
+		}
 		result = get_input(file_input, &buf, &n, child_reaper);
+		fflush(file_input);
 		if (result < 0) break;
 		task = parse_task(buf);
 		if (task == TASK_EMPTY) continue;
@@ -56,7 +61,7 @@ int main(int argc, char *argv[], char *env[]) {
 	}
 	if (file_input != stdin) fclose(file_input);
 	free(buf);
-	if (task != NULL && task != TASK_FAILED) free_task(task);
+	if (task != NULL && task != TASK_FAILED && task != TASK_EMPTY) free_task(task);
 	if (result < 0 && file_input == stdin) puts("");
-	return result < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
