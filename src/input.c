@@ -26,10 +26,10 @@ int get_input(FILE *fstream, char **malloced_ptr, size_t *n, void (*sig_handler)
 		else if (result < 0) return result;
 		else break; /* ready for input */
 	}
-	sigprocmask(SIG_SETMASK, &oset, NULL);
 	ssize_t bytes_read;
 	if ((bytes_read = getline(malloced_ptr, n, fstream)) < 0) return -1;
-	(*malloced_ptr)[bytes_read - 1] = '\0';
+	char *end_byte = (*malloced_ptr) + bytes_read - 1;
+	if (*end_byte == '\n') *end_byte = '\0';
 	sigprocmask(SIG_SETMASK, &oset, NULL);
 	run_signal_handler(sig_handler);
 	return 0;
