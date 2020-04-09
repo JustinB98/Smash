@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 
 #include "signal_handlers.h"
+#include "job_table.h"
 
 static void set_up_sigaction(struct sigaction *action, void (*handler)(int)) {
 	action->sa_handler = handler;
@@ -51,6 +52,9 @@ void reap_children() {
 	int wstatus;
 	while ((rpid = waitpid(-1, &wstatus, WNOHANG | WUNTRACED | WCONTINUED)) > 0) {
 		printf("Reaped %d\n", rpid);
+		if (WIFEXITED(wstatus)) {
+			job_table_remove(rpid);
+		}
 	}
 }
 

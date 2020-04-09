@@ -21,17 +21,18 @@ void job_table_init() {
 
 int job_table_insert(JOB *job) {
 	int new_jobid = queue_peek(job_id_queue) + 1;
+	job->jobid = new_jobid;
 	hashtable_insert(pid_table, job->pid, job);
 	hashtable_insert(job_id_table, new_jobid, job);
 	queue_insert(job_id_queue, new_jobid);
 	return new_jobid;
 }
 
-void job_table_remove(int jobid) {
-	JOB *job = hashtable_find(job_id_table, jobid);
-	hashtable_remove(job_id_table, jobid, NULL);
+void job_table_remove(pid_t pid) {
+	JOB *job = hashtable_find(pid_table, pid);
+	hashtable_remove(job_id_table, job->jobid, NULL);
 	hashtable_remove(pid_table, job->pid, NULL);
-	queue_remove(job_id_queue, jobid);
+	queue_remove(job_id_queue, job->jobid);
 	free_job(job);
 }
 
@@ -39,7 +40,6 @@ void print_all_jobs() {
 	int max_job_id = queue_peek(job_id_queue);
 	for (int i = 1; i <= max_job_id; ++i) {
 		void *data = hashtable_find(job_id_table, i);
-		printf("Data found: %p\n", data);
 		if (data != NULL) {
 			JOB *job = data;
 			printf("[%d] %d %d %s\n", i, job->pid, job->status, job->task->full_command);
