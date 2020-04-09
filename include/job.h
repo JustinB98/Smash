@@ -11,6 +11,7 @@ typedef enum job_status {
 
 typedef struct job {
 	TASK *task;
+	int jobid;
 	JOB_STATUS status;
 	pid_t pid;
 } JOB;
