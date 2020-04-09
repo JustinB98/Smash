@@ -8,6 +8,8 @@ int job_table_insert(JOB *job);
 
 void job_table_remove(int jobid);
 
+JOB *job_table_find(int jobid);
+
 void print_all_jobs();
 
 void job_table_fini();

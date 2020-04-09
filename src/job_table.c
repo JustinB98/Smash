@@ -36,6 +36,10 @@ void job_table_remove(pid_t pid) {
 	free_job(job);
 }
 
+JOB *job_table_find(int jobid) {
+	return hashtable_find(job_id_table, jobid);
+}
+
 void print_all_jobs() {
 	int max_job_id = queue_peek(job_id_queue);
 	for (int i = 1; i <= max_job_id; ++i) {
