@@ -5,10 +5,12 @@
 #include <errno.h>
 #include <limits.h>
 #include <pwd.h>
+#include <signal.h>
 
 #include "task.h"
 #include "exit_code.h"
 #include "job_table.h"
+#include "foreground_job.h"
 
 static int smash_exit(TASK *task) {
 	if (task->n_words != 1) { 
@@ -67,11 +69,40 @@ int smash_jobs(TASK *task) {
 	return 1;
 }
 
+int smash_fg(TASK *task) {
+	if (task->n_words != 2) {
+		fprintf(stderr, "smash: Incorrect usage of fg\nUSEAGE: fg <jobid>\n");
+		return -1;
+	}
+	char *jobid_str = task->word_list->next->word;
+	int jobid;
+	if (sscanf(jobid_str, "%i", &jobid) < 0) {
+		fprintf(stderr, "smash: Job id must be a number\n");
+		return -1;
+	}
+	JOB *job = job_table_find(jobid);
+	if (job == NULL) {
+		fprintf(stderr, "smash: Could not find job number %d\n", jobid);
+		return -1;
+	}
+	sigset_t set, oset;
+	sigfillset(&set);
+	sigprocmask(SIG_SETMASK, &set, &oset);
+	kill(job->pid, SIGCONT);
+	int result = wait_for_process(job, &oset, NULL);
+	sigprocmask(SIG_SETMASK, &oset, NULL);
+	if (result == 0) {
+		job_table_remove(job->pid);
+	}
+	return 1;
+}
+
 int execute_smash_command(TASK *task) {
 	char *cmd = task->word_list->word;
 	if (!strcmp(cmd, "cd")) return smash_cd(task);
 	else if (!strcmp(cmd, "pwd")) return smash_pwd(task);
 	else if (!strcmp(cmd, "jobs")) return smash_jobs(task);
+	else if (!strcmp(cmd, "fg")) return smash_fg(task);
 	return 0;
 }
 
