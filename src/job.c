@@ -15,6 +15,7 @@
 #include "smash_commands.h"
 #include "signal_handlers.h"
 #include "job_table.h"
+#include "foreground_job.h"
 
 void free_job(JOB *job) {
 	free_task(job->task);
@@ -91,6 +92,11 @@ static void child_process_start_job(TASK *task, char *envp[]) {
 	}
 }
 
+void print_new_background_job(JOB *job) {
+	int jobid = job_table_insert(job);
+	printf("[%d] Stopped %s\n", jobid, job->task->full_command);
+}
+
 void start_task(TASK *task, char *envp[]) {
 	if (execute_smash_command(task) != 0) {
 		free_task(task);
@@ -114,25 +120,8 @@ void start_task(TASK *task, char *envp[]) {
 	job->status = 0;
 	job->pid = pid;
 	if (task->fg) {
-		while (1) {
-			sigsuspend(&oset);
-			if (sigstop_flag) {
-				kill(pid, SIGSTOP);
-				job_table_insert(job);
-				job->status = STOPPED;
-				break;
-			}
-			int exit_status;
-			pid_t wait_pid_result = waitpid(pid, &exit_status, WNOHANG);
-			child_reaper();
-			if (wait_pid_result == pid) {
-				int exit_code = WEXITSTATUS(exit_status);
-				set_exit_code(exit_code);
-				free_job(job);
-				break;
-			}
-			if (sigint_flag) kill(pid, SIGKILL);
-		}
+		int result = wait_for_process(job, &oset, print_new_background_job);
+		if (result == 0) free_job(job);
 	} else {
 		job_table_insert(job);
 		kill(pid, SIGTTIN);
