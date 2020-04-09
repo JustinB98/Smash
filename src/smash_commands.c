@@ -8,6 +8,7 @@
 
 #include "task.h"
 #include "exit_code.h"
+#include "job_table.h"
 
 static int smash_exit(TASK *task) {
 	if (task->n_words != 1) { 
@@ -57,10 +58,20 @@ static int smash_pwd(TASK *task) {
 	return 1;
 }
 
+int smash_jobs(TASK *task) {
+	if (task->n_words > 1) {
+		fprintf(stderr, "smash: Too many arguments for jobs\n");
+		return -1;
+	}
+	print_all_jobs();
+	return 1;
+}
+
 int execute_smash_command(TASK *task) {
 	char *cmd = task->word_list->word;
 	if (!strcmp(cmd, "cd")) return smash_cd(task);
 	else if (!strcmp(cmd, "pwd")) return smash_pwd(task);
+	else if (!strcmp(cmd, "jobs")) return smash_jobs(task);
 	return 0;
 }
 
