@@ -17,5 +17,6 @@ typedef struct job {
 
 void start_task(TASK *task, char *envp[]);
 
+void free_job(JOB *job);
 
 #endif /* JOB_H */

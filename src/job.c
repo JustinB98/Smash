@@ -14,6 +14,12 @@
 #include "exit_code.h"
 #include "smash_commands.h"
 #include "signal_handlers.h"
+#include "job_table.h"
+
+void free_job(JOB *job) {
+	free_task(job->task);
+	free(job);
+}
 
 static void safe_open_file_for_reading(char *path, int *fd, int default_value) {
 	if (path == NULL) {
@@ -86,7 +92,10 @@ static void child_process_start_job(TASK *task, char *envp[]) {
 }
 
 void start_task(TASK *task, char *envp[]) {
-	if (execute_smash_command(task) != 0) return;
+	if (execute_smash_command(task) != 0) {
+		free_task(task);
+		return;
+	}
 	sigset_t set, oset;
 	sigfillset(&set);
 	sigprocmask(SIG_SETMASK, &set, &oset);
@@ -98,21 +107,32 @@ void start_task(TASK *task, char *envp[]) {
 	} else if (pid == 0) {
 		child_process_start_job(task, envp);
 	}
+	JOB *job = malloc(sizeof(JOB));
+	/* TODO handle malloc error */
+	if (job == NULL) return;
+	job->task = task;
+	job->status = 0;
+	job->pid = pid;
 	if (task->fg) {
 		while (1) {
 			sigsuspend(&oset);
-			if (sigstop_flag) break;
+			if (sigstop_flag) {
+				job_table_insert(job);
+				break;
+			}
 			int exit_status;
 			pid_t wait_pid_result = waitpid(pid, &exit_status, WNOHANG);
 			child_reaper();
 			if (wait_pid_result == pid) {
 				int exit_code = WEXITSTATUS(exit_status);
 				set_exit_code(exit_code);
+				free_job(job);
 				break;
 			}
 			if (sigint_flag) kill(pid, SIGKILL);
 		}
 	} else {
+		job_table_insert(job);
 		kill(pid, SIGTTIN);
 	}
 	sigprocmask(SIG_SETMASK, &oset, NULL);
