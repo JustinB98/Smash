@@ -6,6 +6,7 @@
 typedef enum job_status {
 	RUNNING,
 	STOPPED,
+	ABORTED,
 	DONE
 } JOB_STATUS;
 
