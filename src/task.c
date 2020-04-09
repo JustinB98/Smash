@@ -84,9 +84,9 @@ static int handle_redirection(TASK *task, char *token) {
 TASK *parse_task(char *string_to_parse) {
 	TASK *task;
 	WORD_LIST *word_list;
+	char *s = string_to_parse;
 	if (allocate_task_variables(&task, &string_to_parse, &word_list)) return TASK_FAILED;
 	task->full_command = string_to_parse;
-	char *s = string_to_parse;
 	word_list->next = NULL;
 	word_list->word = NULL;
 	WORD_LIST *prev = NULL;
