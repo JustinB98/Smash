@@ -117,7 +117,9 @@ void start_task(TASK *task, char *envp[]) {
 		while (1) {
 			sigsuspend(&oset);
 			if (sigstop_flag) {
+				kill(pid, SIGSTOP);
 				job_table_insert(job);
+				job->status = STOPPED;
 				break;
 			}
 			int exit_status;
