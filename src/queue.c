@@ -61,19 +61,21 @@ int queue_pop(QUEUE *queue) {
 	return data;
 }
 
-static void queue_node_remove(QUEUE_NODE *node, QUEUE_NODE *prev, int data) {
+static QUEUE_NODE *queue_node_remove(QUEUE_NODE *node, QUEUE_NODE *prev, int data) {
 	if (node == NULL){
-		return;
+		return NULL;
 	} else if (node->data == data) {
-		if (prev != NULL) prev->next = node->next;
+		QUEUE_NODE *next = node->next;
 		free(node);
+		return next;
 	} else {
-		queue_node_remove(node->next, node, data);
+		node->next = queue_node_remove(node->next, node, data);
+		return node;
 	}
 }
 
 void queue_remove(QUEUE *queue, int data) {
-	queue_node_remove(queue->root, NULL, data);
+	queue->root = queue_node_remove(queue->root, NULL, data);
 }
 
 void queue_fini(QUEUE *queue) {
