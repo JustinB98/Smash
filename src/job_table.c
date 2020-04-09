@@ -10,6 +10,8 @@
 static HASHTABLE *pid_table, *job_id_table;
 static QUEUE *job_id_queue;
 
+static char *job_status_names[] = { "RUNNING", "STOPPED", "ABORTED", "DONE" };
+
 void job_table_init() {
 	pid_table = hashtable_init(53);
 	if (pid_table == NULL) exit(EXIT_FAILURE);
@@ -46,7 +48,7 @@ void print_all_jobs() {
 		void *data = hashtable_find(job_id_table, i);
 		if (data != NULL) {
 			JOB *job = data;
-			printf("[%d] %d %d %s\n", i, job->pid, job->status, job->task->full_command);
+			printf("[%d] %d %s %s\n", i, job->pid, job_status_names[job->status], job->task->full_command);
 		}
 	}
 }
