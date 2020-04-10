@@ -22,7 +22,6 @@ wait_for_process_skip_suspend:
 		if (sigstop_flag) {
 			kill(pid, SIGSTOP);
 			if (onStop) onStop(job);
-			job->status = STOPPED;
 			sigstop_flag = 0;
 			return -1;
 		}
