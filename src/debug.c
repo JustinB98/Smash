@@ -7,10 +7,10 @@
 
 void print_debug_message(char *s, ...) {
 	if (!has_d_flag()) return;
-	printf("DEBUG: ");
+	fprintf(stderr, "DEBUG: ");
 	va_list ap;
 	va_start(ap, s);
-	vprintf(s, ap);
+	vfprintf(stderr, s, ap);
 	va_end(ap);
-	puts("");
+	fprintf(stderr, "\n");
 }
