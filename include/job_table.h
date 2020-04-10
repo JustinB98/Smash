@@ -10,6 +10,8 @@ void job_table_remove(int jobid);
 
 JOB *job_table_find(int jobid);
 
+void job_table_change_status(pid_t pid, int status);
+
 void print_all_jobs();
 
 void job_table_fini();

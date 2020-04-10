@@ -32,6 +32,7 @@ int job_table_insert(JOB *job) {
 
 void job_table_remove(pid_t pid) {
 	JOB *job = hashtable_find(pid_table, pid);
+	/* TODO what if job is NULL */
 	hashtable_remove(job_id_table, job->jobid, NULL);
 	hashtable_remove(pid_table, job->pid, NULL);
 	queue_remove(job_id_queue, job->jobid);
@@ -40,6 +41,11 @@ void job_table_remove(pid_t pid) {
 
 JOB *job_table_find(int jobid) {
 	return hashtable_find(job_id_table, jobid);
+}
+
+void job_table_change_status(pid_t pid, int status) {
+	JOB *job = hashtable_find(pid_table, pid);
+	job->status = status;
 }
 
 void print_all_jobs() {
