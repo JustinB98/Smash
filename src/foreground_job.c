@@ -8,6 +8,7 @@
 #include "job_table.h"
 #include "signal_handlers.h"
 #include "exit_code.h"
+#include "debug.h"
 
 int wait_for_process(JOB *job, sigset_t *oset, void (*onStop)(JOB *)) {
 	pid_t pid = job->pid;
@@ -35,6 +36,9 @@ wait_for_process_skip_suspend:
 		child_reaper();
 		if (wait_pid_result == pid) {
 			int exit_code = WEXITSTATUS(exit_status);
+			print_debug_message("ENDED FOREGROUND JOB: %s (ret=%d)",
+								job->task->full_command,
+								exit_code);
 			set_exit_code(exit_code);
 			return 0;
 		}

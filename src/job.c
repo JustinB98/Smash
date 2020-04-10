@@ -16,6 +16,7 @@
 #include "signal_handlers.h"
 #include "job_table.h"
 #include "foreground_job.h"
+#include "debug.h"
 
 void free_job(JOB *job) {
 	free_task(job->task);
@@ -115,6 +116,7 @@ void start_task(TASK *task, char *envp[]) {
 	} else if (pid == 0) {
 		child_process_start_job(task, envp);
 	}
+	print_debug_message("RUNNING: %s", task->full_command);
 	JOB *job = malloc(sizeof(JOB));
 	/* TODO handle malloc error */
 	if (job == NULL) return;

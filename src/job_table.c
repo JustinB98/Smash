@@ -6,6 +6,7 @@
 #include "queue.h"
 #include "task.h"
 #include "job.h"
+#include "debug.h"
 
 static HASHTABLE *pid_table, *job_id_table;
 static QUEUE *job_id_queue;
@@ -33,6 +34,8 @@ int job_table_insert(JOB *job) {
 void job_table_remove(pid_t pid) {
 	JOB *job = hashtable_find(pid_table, pid);
 	/* TODO what if job is NULL */
+	print_debug_message("Removing job %d (pid=%d) \'%s\' from the job table",
+						job->jobid, pid, job->task->full_command);
 	hashtable_remove(job_id_table, job->jobid, NULL);
 	hashtable_remove(pid_table, job->pid, NULL);
 	queue_remove(job_id_queue, job->jobid);
@@ -45,6 +48,11 @@ JOB *job_table_find(int jobid) {
 
 void job_table_change_status(pid_t pid, int status) {
 	JOB *job = hashtable_find(pid_table, pid);
+	print_debug_message("[%d] %d %s status %s -> %s",
+						job->jobid, pid,
+						job->task->full_command,
+						job_status_names[job->status],
+						job_status_names[status]);
 	job->status = status;
 }
 
