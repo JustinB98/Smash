@@ -60,7 +60,7 @@ static int smash_pwd(TASK *task) {
 	return 1;
 }
 
-int smash_jobs(TASK *task) {
+static int smash_jobs(TASK *task) {
 	if (task->n_words > 1) {
 		fprintf(stderr, "smash: Too many arguments for jobs\n");
 		return -1;
@@ -69,22 +69,28 @@ int smash_jobs(TASK *task) {
 	return 1;
 }
 
-int smash_fg(TASK *task) {
+static JOB *job_control_prereq(TASK *task) {
+	int jobid;
+	char *cmd = task->word_list->word;
 	if (task->n_words != 2) {
-		fprintf(stderr, "smash: Incorrect usage of fg\nUSEAGE: fg <jobid>\n");
-		return -1;
+		fprintf(stderr, "smash: Incorrect usage of %1$s\nUSAGE: %1$s <jobid>\n", cmd);
+		return NULL;
 	}
 	char *jobid_str = task->word_list->next->word;
-	int jobid;
-	if (sscanf(jobid_str, "%i", &jobid) < 0) {
+	if (sscanf(jobid_str, "%d", &jobid) < 0) {
 		fprintf(stderr, "smash: Job id must be a number\n");
-		return -1;
+		return NULL;
 	}
 	JOB *job = job_table_find(jobid);
 	if (job == NULL) {
-		fprintf(stderr, "smash: Could not find job number %d\n", jobid);
-		return -1;
+		fprintf(stderr, "smash: Could not find job number%d\n", jobid);
 	}
+	return job;
+}
+
+static int smash_fg(TASK *task) {
+	JOB *job = job_control_prereq(task);
+	if (job == NULL) return -1;
 	sigset_t set, oset;
 	sigfillset(&set);
 	sigprocmask(SIG_SETMASK, &set, &oset);
@@ -97,12 +103,20 @@ int smash_fg(TASK *task) {
 	return 1;
 }
 
+static int smash_bg(TASK *task) {
+	JOB *job = job_control_prereq(task);
+	if (job == NULL) return -1;
+	kill(job->pid, SIGCONT);
+	return 1;
+}
+
 int execute_smash_command(TASK *task) {
 	char *cmd = task->word_list->word;
 	if (!strcmp(cmd, "cd")) return smash_cd(task);
 	else if (!strcmp(cmd, "pwd")) return smash_pwd(task);
 	else if (!strcmp(cmd, "jobs")) return smash_jobs(task);
 	else if (!strcmp(cmd, "fg")) return smash_fg(task);
+	else if (!strcmp(cmd, "bg")) return smash_bg(task);
 	return 0;
 }
 
