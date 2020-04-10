@@ -69,14 +69,8 @@ static int smash_jobs(TASK *task) {
 	return 1;
 }
 
-static JOB *job_control_prereq(TASK *task) {
+static JOB *get_job_from_table(char *jobid_str) {
 	int jobid;
-	char *cmd = task_get_command(task);
-	if (task->n_words != 2) {
-		fprintf(stderr, "smash: Incorrect usage of %1$s\nUSAGE: %1$s <jobid>\n", cmd);
-		return NULL;
-	}
-	char *jobid_str = task_get_word(task, 1);
 	if (sscanf(jobid_str, "%d", &jobid) < 0) {
 		fprintf(stderr, "smash: Job id must be a number\n");
 		return NULL;
@@ -86,6 +80,17 @@ static JOB *job_control_prereq(TASK *task) {
 		fprintf(stderr, "smash: Could not find job number%d\n", jobid);
 	}
 	return job;
+
+}
+
+static JOB *job_control_prereq(TASK *task) {
+	char *cmd = task_get_command(task);
+	if (task->n_words != 2) {
+		fprintf(stderr, "smash: Incorrect usage of %1$s\nUSAGE: %1$s <jobid>\n", cmd);
+		return NULL;
+	}
+	char *jobid_str = task_get_word(task, 1);
+	return get_job_from_table(jobid_str);
 }
 
 static int smash_fg(TASK *task) {
@@ -110,6 +115,30 @@ static int smash_bg(TASK *task) {
 	return 1;
 }
 
+static int smash_kill(TASK *task) {
+	char *cmd = task_get_command(task);
+	if (task->n_words != 3) {
+		fprintf(stderr, "smash: Incorrect usage of %1$s\nUSAGE: %1$s -<SIGNUM> <jobid>\n", cmd);
+		return -1;
+	}
+	char *signum_str = task_get_word(task, 1);
+	int signum;
+	if (sscanf(signum_str, "%d", &signum) < 0 || (signum > 0)) {
+		fprintf(stderr, "smash: kill usage: kill -<SIGNUM> <jobid>\n");
+		return -1;
+	}
+	signum = -signum;
+	if (signum > NSIG || signum < 0) {
+		fprintf(stderr, "smash: invalid signal\n");
+		return -1;
+	}
+	char *jobstr_id = task_get_word(task, 2);
+	JOB *job = get_job_from_table(jobstr_id);
+	if (job == NULL) return -1;
+	kill(job->pid, signum);
+	return 1;
+}
+
 int execute_smash_command(TASK *task) {
 	char *cmd = task_get_command(task);
 	if (!strcmp(cmd, "cd")) return smash_cd(task);
@@ -117,6 +146,7 @@ int execute_smash_command(TASK *task) {
 	else if (!strcmp(cmd, "jobs")) return smash_jobs(task);
 	else if (!strcmp(cmd, "fg")) return smash_fg(task);
 	else if (!strcmp(cmd, "bg")) return smash_bg(task);
+	else if (!strcmp(cmd, "kill")) return smash_kill(task);
 	return 0;
 }
 
