@@ -52,8 +52,15 @@ void reap_children() {
 	int wstatus;
 	while ((rpid = waitpid(-1, &wstatus, WNOHANG | WUNTRACED | WCONTINUED)) > 0) {
 		printf("Reaped %d\n", rpid);
-		if (WIFEXITED(wstatus)) {
+		if (WIFEXITED(wstatus) || WIFSIGNALED(wstatus)) {
+			printf("%d exited\n", rpid);
 			job_table_remove(rpid);
+		}
+		if (WIFSTOPPED(wstatus)) {
+			printf("%d stopped\n", rpid);
+		}
+		if (WIFSIGNALED(wstatus)) {
+			printf("%d was signaled\n", rpid);
 		}
 	}
 }
