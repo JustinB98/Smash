@@ -20,6 +20,10 @@ typedef struct task {
 #define TASK_FAILED ((TASK *) 0)
 #define TASK_EMPTY ((TASK *) 1)
 
+char *task_get_word(TASK *task, int index);
+
+char *task_get_command(TASK *task);
+
 void free_task(TASK *task);
 
 TASK *parse_task(char *string_to_parse);

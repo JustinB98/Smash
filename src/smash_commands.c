@@ -28,7 +28,7 @@ static int smash_cd(TASK *task) {
 	}
 	char *path = NULL;
 	if (task->n_words == 2) {
-		path = task->word_list->next->word;
+		path = task_get_word(task, 1);
 	} else if (task->n_words == 1) {
 		path = getenv("HOME");
 	}
@@ -71,12 +71,12 @@ static int smash_jobs(TASK *task) {
 
 static JOB *job_control_prereq(TASK *task) {
 	int jobid;
-	char *cmd = task->word_list->word;
+	char *cmd = task_get_command(task);
 	if (task->n_words != 2) {
 		fprintf(stderr, "smash: Incorrect usage of %1$s\nUSAGE: %1$s <jobid>\n", cmd);
 		return NULL;
 	}
-	char *jobid_str = task->word_list->next->word;
+	char *jobid_str = task_get_word(task, 1);
 	if (sscanf(jobid_str, "%d", &jobid) < 0) {
 		fprintf(stderr, "smash: Job id must be a number\n");
 		return NULL;
@@ -111,7 +111,7 @@ static int smash_bg(TASK *task) {
 }
 
 int execute_smash_command(TASK *task) {
-	char *cmd = task->word_list->word;
+	char *cmd = task_get_command(task);
 	if (!strcmp(cmd, "cd")) return smash_cd(task);
 	else if (!strcmp(cmd, "pwd")) return smash_pwd(task);
 	else if (!strcmp(cmd, "jobs")) return smash_jobs(task);
@@ -121,7 +121,7 @@ int execute_smash_command(TASK *task) {
 }
 
 int should_exit(TASK *task) {
-	char *cmd = task->word_list->word;
+	char *cmd = task_get_command(task);
 	if (!strcmp(cmd, "exit")) {
 		return smash_exit(task);
 	} else return 0;

@@ -23,6 +23,19 @@ void free_task(TASK *task) {
 	free(task);
 }
 
+char *task_get_word(TASK *task, int index) {
+	if (index > task->n_words) return NULL;
+	WORD_LIST *current = task->word_list;
+	for (int i = 0; i < index; ++i) {
+		current = current->next;
+	}
+	return current->word;
+}
+
+char *task_get_command(TASK *task) {
+	return task->word_list->word;
+}
+
 static int allocate_task_variables(TASK **task, char **string_to_parse, WORD_LIST **word_list) {
 	*task = malloc(sizeof(TASK));
 	if (*task == NULL) goto free_task;
