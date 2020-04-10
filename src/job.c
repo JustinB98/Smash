@@ -98,8 +98,10 @@ void print_new_background_job(JOB *job) {
 }
 
 void start_task(TASK *task, char *envp[]) {
-	if (execute_smash_command(task) != 0) {
+	int smash_command = execute_smash_command(task);
+	if (smash_command != 0) {
 		free_task(task);
+		set_exit_code(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 		return;
 	}
 	sigset_t set, oset;
