@@ -51,21 +51,21 @@ void reap_children() {
 	pid_t rpid;
 	int wstatus;
 	while ((rpid = waitpid(-1, &wstatus, WNOHANG | WUNTRACED | WCONTINUED)) > 0) {
-		printf("Reaped %d\n", rpid);
+		// printf("Reaped %d\n", rpid);
 		if (WIFEXITED(wstatus) || WIFSIGNALED(wstatus)) {
 			job_table_change_status(rpid, DONE);
-			printf("%d exited\n", rpid);
-			job_table_remove(rpid);
+			// printf("%d exited\n", rpid);
+			// job_table_remove_by_pid(rpid);
 		}
 		if (WIFCONTINUED(wstatus)) {
 			job_table_change_status(rpid, RUNNING);
 		}
 		if (WIFSTOPPED(wstatus)) {
-			printf("%d stopped\n", rpid);
+			// printf("%d stopped\n", rpid);
 			job_table_change_status(rpid, STOPPED);
 		}
 		if (WIFSIGNALED(wstatus)) {
-			printf("%d was signaled\n", rpid);
+			// printf("%d was signaled\n", rpid);
 		}
 	}
 }
