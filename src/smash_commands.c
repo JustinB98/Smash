@@ -103,7 +103,7 @@ static int smash_fg(TASK *task) {
 	int result = wait_for_process(job, &oset, NULL);
 	sigprocmask(SIG_SETMASK, &oset, NULL);
 	if (result == 0) {
-		job_table_remove(job->pid);
+		job_table_remove(job);
 	}
 	return 1;
 }

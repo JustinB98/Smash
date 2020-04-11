@@ -31,15 +31,20 @@ int job_table_insert(JOB *job) {
 	return new_jobid;
 }
 
-void job_table_remove(pid_t pid) {
-	JOB *job = hashtable_find(pid_table, pid);
+void job_table_remove(JOB *job) {
 	/* TODO what if job is NULL */
 	print_debug_message("Removing job %d (pid=%d) \'%s\' from the job table",
-						job->jobid, pid, job->task->full_command);
+			job->jobid, job->pid, job->task->full_command);
 	hashtable_remove(job_id_table, job->jobid, NULL);
 	hashtable_remove(pid_table, job->pid, NULL);
 	queue_remove(job_id_queue, job->jobid);
 	free_job(job);
+
+}
+
+void job_table_remove_by_pid(pid_t pid) {
+	JOB *job = hashtable_find(pid_table, pid);
+	job_table_remove(job);
 }
 
 JOB *job_table_find(int jobid) {
@@ -56,15 +61,35 @@ void job_table_change_status(pid_t pid, int status) {
 	job->status = status;
 }
 
-void print_all_jobs() {
+static void for_each_job(void (*job_consumer)(JOB *)) {
 	int max_job_id = queue_peek(job_id_queue);
 	for (int i = 1; i <= max_job_id; ++i) {
 		void *data = hashtable_find(job_id_table, i);
 		if (data != NULL) {
-			JOB *job = data;
-			printf("[%d] %d %s %s\n", i, job->pid, job_status_names[job->status], job->task->full_command);
+			job_consumer(data);
 		}
 	}
+
+}
+
+static void print_single_job(JOB *job) {
+	printf("[%d] %d %s %s\n", job->jobid, job->pid, job_status_names[job->status], job->task->full_command);
+}
+
+void print_all_jobs() {
+	for_each_job(print_single_job);
+}
+
+static void print_and_remove_finished_job(JOB *job) {
+	if (job->status != DONE) return;
+	printf("[%d] %d \'%s\' DONE\n",
+		   job->jobid, job->pid,
+		   job->task->full_command);
+	job_table_remove(job);
+}
+
+void print_and_remove_finished_jobs() {
+	for_each_job(print_and_remove_finished_job);
 }
 
 static void job_freer(void *data) {
