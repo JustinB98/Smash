@@ -15,6 +15,7 @@ typedef struct job {
 	int jobid;
 	JOB_STATUS status;
 	pid_t pid;
+	int exit_code;
 } JOB;
 
 void start_task(TASK *task, char *envp[]);
