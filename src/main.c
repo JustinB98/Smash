@@ -12,6 +12,7 @@
 #include "smash_commands.h"
 #include "args.h"
 #include "job_table.h"
+#include "debug.h"
 
 void print_task_info(TASK *task) {
 	WORD_LIST *list = task->word_list;
@@ -49,10 +50,12 @@ int main(int argc, char *argv[], char *env[]) {
 			fflush(stdout);
 		}
 		result = get_input(file_input, &buf, &n, child_reaper);
+		/* File input needs to be flushed because appearently the new line from it */
+		/* messes with reading it */
 		fflush(file_input);
 		if (result < 0) break;
 		task = parse_task(buf);
-		if (task == TASK_EMPTY) continue;
+		if (task == TASK_EMPTY) goto end_of_main_loop;
 		else if (task == TASK_FAILED) break;
 		int exit_smash = should_exit(task);
 		if (exit_smash > 0) {
@@ -62,10 +65,12 @@ int main(int argc, char *argv[], char *env[]) {
 		else if (exit_smash == 0) {
 			start_task(task, env);
 		}
+end_of_main_loop:
+		print_and_remove_finished_jobs();
 	}
 	job_table_fini();
 	if (file_input != stdin) fclose(file_input);
 	free(buf);
-	if (result < 0 && file_input == stdin) puts("");
+	if (result < 0 && file_input == stdin) puts("exit");
 	return EXIT_SUCCESS;
 }
