@@ -13,10 +13,12 @@ static QUEUE *job_id_queue;
 
 static char *job_status_names[] = { "RUNNING", "STOPPED", "ABORTED", "DONE" };
 
+#define HASHTABLE_SIZE 53
+
 void job_table_init() {
-	pid_table = hashtable_init(53);
+	pid_table = hashtable_init(HASHTABLE_SIZE);
 	if (pid_table == NULL) exit(EXIT_FAILURE);
-	job_id_table = hashtable_init(53);
+	job_id_table = hashtable_init(HASHTABLE_SIZE);
 	if (job_id_table == NULL) exit(EXIT_FAILURE);
 	job_id_queue = queue_init();
 	if (job_id_queue == NULL) exit(EXIT_FAILURE);
@@ -74,6 +76,9 @@ static void for_each_job(void (*job_consumer)(JOB *)) {
 
 static void print_single_job(JOB *job) {
 	printf("[%d] %d %s %s\n", job->jobid, job->pid, job_status_names[job->status], job->task->full_command);
+	if (job->status == DONE) {
+		job_table_remove(job);
+	}
 }
 
 void print_all_jobs() {
