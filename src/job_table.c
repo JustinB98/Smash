@@ -53,14 +53,32 @@ JOB *job_table_find(int jobid) {
 	return hashtable_find(job_id_table, jobid);
 }
 
-void job_table_change_status(pid_t pid, int status) {
+static JOB *job_table_change_status_of_job(pid_t pid, int status) {
 	JOB *job = hashtable_find(pid_table, pid);
 	print_debug_message("[%d] %d %s status %s -> %s",
-						job->jobid, pid,
-						job->task->full_command,
-						job_status_names[job->status],
-						job_status_names[status]);
+			job->jobid, pid,
+			job->task->full_command,
+			job_status_names[job->status],
+			job_status_names[status]);
 	job->status = status;
+	return job;
+}
+
+static void job_table_mark_as_finished(pid_t pid, int status, int exit_code) {
+	JOB *job = job_table_change_status_of_job(pid, status);
+	job->exit_code = exit_code;
+}
+
+void job_table_mark_as_done(pid_t pid, int exit_code) {
+	job_table_mark_as_finished(pid, DONE, exit_code);
+}
+
+void job_table_mark_as_aborted(pid_t pid, int exit_code) {
+	job_table_mark_as_finished(pid, ABORTED, exit_code);
+}
+
+void job_table_change_status(pid_t pid, int status) {
+	job_table_change_status_of_job(pid, status);
 }
 
 static void for_each_job(void (*job_consumer)(JOB *)) {
@@ -71,26 +89,31 @@ static void for_each_job(void (*job_consumer)(JOB *)) {
 			job_consumer(data);
 		}
 	}
+}
 
+static void print_and_remove_finished_job(JOB *job) {
+	if (job->status != DONE && job->status != ABORTED) return;
+	printf("[%d] %d %s \'%s\' -------- Exit code: %d\n",
+			job->jobid, job->pid,
+			job_status_names[job->status],
+			job->task->full_command,
+			job->exit_code);
+	job_table_remove(job);
 }
 
 static void print_single_job(JOB *job) {
-	printf("[%d] %d %s %s\n", job->jobid, job->pid, job_status_names[job->status], job->task->full_command);
-	if (job->status == DONE) {
-		job_table_remove(job);
+	if (job->status == DONE || job->status == ABORTED) {
+		print_and_remove_finished_job(job);
+	} else {
+		printf("[%d] %d %s \'%s\'\n",
+				job->jobid, job->pid,
+				job_status_names[job->status],
+				job->task->full_command);
 	}
 }
 
 void print_all_jobs() {
 	for_each_job(print_single_job);
-}
-
-static void print_and_remove_finished_job(JOB *job) {
-	if (job->status != DONE) return;
-	printf("[%d] %d \'%s\' DONE\n",
-		   job->jobid, job->pid,
-		   job->task->full_command);
-	job_table_remove(job);
 }
 
 void print_and_remove_finished_jobs() {
