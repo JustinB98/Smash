@@ -68,15 +68,21 @@ get_exit_code_finish:
 	return exit_code_str;
 }
 
-static char *process_word(char *word) {
+static char *get_env_var(char *word) {
+	if (!strcmp(word, "$?")) return get_exit_code_str();
+	char *var = getenv(word + 1);
+	var = var == NULL ? "" : var;
+	return strdup(var);
+}
+
+static WORD_LIST *process_word(WORD_LIST *word_list, char *word, WORD_LIST **prev) {
 	if (*word == '$') {
-		if (!strcmp(word, "$?")) return get_exit_code_str();
-		char *var = getenv(word + 1);
-		var = var == NULL ? "" : var;
-		return strdup(var);
+		word = get_env_var(word);
 	} else {
-		return strdup(word);
+		word = strdup(word);
 	}
+	word_list->word = word;
+	return word_list;
 }
 
 /* Returns 1 if token was a redirection. 0 if not */
@@ -112,7 +118,7 @@ TASK *parse_task(char *string_to_parse) {
 		last_token = token;
 		if (prev == NULL && token[0] == '#') break;
 		if (handle_redirection(task, token) > 0) continue;
-		word_list->word = process_word(token);
+		word_list = process_word(word_list, token, &prev);
 		if (word_list->word == NULL) goto parse_task_failed;
 		WORD_LIST *next_list = malloc(sizeof(WORD_LIST));
 		if (next_list == NULL) goto parse_task_failed;
