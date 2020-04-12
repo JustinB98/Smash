@@ -44,7 +44,7 @@ char *task_get_command(TASK *task) {
 	return task->word_list->word;
 }
 
-static int allocate_task_variables(TASK **task, char **string_to_parse, WORD_LIST **word_list) {
+static int allocate_task_variables(TASK **task, char **string_to_parse) {
 	*task = malloc(sizeof(TASK));
 	if (*task == NULL) goto free_task;
 	TASK *task_ptr = *task;
@@ -53,11 +53,7 @@ static int allocate_task_variables(TASK **task, char **string_to_parse, WORD_LIS
 	task_ptr->stderr_path = NULL;
 	*string_to_parse = strdup(*string_to_parse);
 	if (string_to_parse == NULL) goto free_string_to_parse;
-	*word_list = malloc(sizeof(WORD_LIST));
-	if (word_list == NULL) goto free_word_list;
 	return 0;
-free_word_list:
-	free(*word_list);
 free_string_to_parse:
 	free(*string_to_parse);
 free_task:
@@ -84,7 +80,8 @@ static char *get_env_var(char *word) {
 }
 
 #ifdef EXTRA_CREDIT
-static WORD_LIST *fill_glob(WORD_LIST *word_list, char *word, WORD_LIST **prev, size_t *n_words) {
+static WORD_LIST **fill_glob(WORD_LIST ***list, char *word, size_t *n_words) {
+	WORD_LIST **word_list = *list;
 	size_t original_n_words = *n_words;
 	char *extension = word + 1;
 	char wd[PATH_MAX];
@@ -106,38 +103,34 @@ static WORD_LIST *fill_glob(WORD_LIST *word_list, char *word, WORD_LIST **prev, 
 			break;
 		}
 		if (strstr(entry->d_name, extension) == NULL) continue;
-		word_list->word = strdup(entry->d_name);
-		*prev = word_list;
-		WORD_LIST *next_list = malloc(sizeof(WORD_LIST));
-		if (next_list == NULL) {
+		*word_list = malloc(sizeof(WORD_LIST));
+		if (*word_list == NULL) {
 			fprintf(stderr, "Could not malloc a word list\n");
 			return NULL;
 		}
-		word_list->next = next_list;
-		word_list = next_list;
-		word_list->next = NULL;
+		(*word_list)->next = NULL;
+		(*word_list)->word = strdup(entry->d_name);
+		word_list = &((*word_list)->next);
 		++(*n_words);
 	}
 	closedir(current_directory);
 	if (original_n_words == *n_words) {
-		WORD_LIST *next_list = malloc(sizeof(WORD_LIST));
-		if (next_list == NULL) {
+		*word_list = malloc(sizeof(WORD_LIST));
+		if (*word_list == NULL) {
 			fprintf(stderr, "Could not malloc a word list\n");
 			return NULL;
 		}
-		*prev = word_list;
-		word_list->word = strdup(word);
-		word_list->next = next_list;
-		word_list = next_list;
-		word_list->next = NULL;
+		(*word_list)->next = NULL;
+		(*word_list)->word = strdup(word);
+		word_list = &((*word_list)->next);
 		++(*n_words);
 	}
 	return word_list;
 }
 
-static int handle_glob(WORD_LIST **word_list, char *word, WORD_LIST **prev, size_t *n_words) {
+static int handle_glob(WORD_LIST ***word_list, char *word, size_t *n_words) {
 	if (word[0] == '*' && word[1] == '.') {
-		*word_list = fill_glob(*word_list, word, prev, n_words);
+		*word_list = fill_glob(word_list, word, n_words);
 		return 1;
 	}
 	return 0;
@@ -212,36 +205,33 @@ static int handle_redirection(TASK *task, char *token) {
 
 TASK *parse_task(char *string_to_parse) {
 	TASK *task;
-	WORD_LIST *word_list;
+	WORD_LIST **word_list;
 	char *s = string_to_parse;
-	if (allocate_task_variables(&task, &string_to_parse, &word_list)) return TASK_FAILED;
+	if (allocate_task_variables(&task, &string_to_parse)) return TASK_FAILED;
 	task->full_command = string_to_parse;
-	word_list->next = NULL;
-	word_list->word = NULL;
-	WORD_LIST *prev = NULL;
-	task->word_list = word_list;
+	word_list = &(task->word_list);
+	*word_list = NULL;
 	size_t n_words = 0;
 	char *token = NULL;
 	char *last_token = NULL;
 	while ((token = strtok_r(s, " ", &s))) {
 		if (*token == '\n') continue;
 		last_token = token;
-		if (prev == NULL && token[0] == '#') break;
+		if (*word_list == NULL && token[0] == '#') break;
 		if (handle_redirection(task, token) > 0) continue;
 #ifdef EXTRA_CREDIT
-		if (handle_glob(&word_list, token, &prev, &n_words)) {
+		if (handle_glob(&word_list, token, &n_words)) {
 			if (word_list == NULL) goto parse_task_failed;
 			continue;
 		}
 #endif
-		word_list->word = process_word(token);
-		if (word_list->word == NULL) goto parse_task_failed;
-		WORD_LIST *next_list = malloc(sizeof(WORD_LIST));
-		if (next_list == NULL) goto parse_task_failed;
-		word_list->next = next_list;
-		prev = word_list;
-		word_list = next_list;
-		word_list->next = NULL;
+		*word_list = malloc(sizeof(WORD_LIST));
+		if (*word_list == NULL) goto parse_task_failed;
+		char *word = process_word(token);
+		if (word == NULL) goto parse_task_failed;
+		(*word_list)->word = word;
+		(*word_list)->next = NULL;
+		word_list = &((*word_list)->next);
 		++n_words;
 	}
 	int fg = 1;
@@ -253,13 +243,11 @@ TASK *parse_task(char *string_to_parse) {
 	}
 	task->fg = fg;
 	task->n_words = n_words;
-	if (prev == NULL) {
-		/* nothing entered, return 0 */
+	if (task->word_list == NULL) {
+		/* nothing entered */
 		free_task(task);
 		return TASK_EMPTY;
 	} else {
-		prev->next = NULL;
-		free(word_list);
 		return task;
 	}
 parse_task_failed:
