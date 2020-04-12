@@ -80,8 +80,7 @@ static char *get_env_var(char *word) {
 }
 
 #ifdef EXTRA_CREDIT
-static WORD_LIST **fill_glob(WORD_LIST ***list, char *word, size_t *n_words) {
-	WORD_LIST **word_list = *list;
+static WORD_LIST **fill_glob(WORD_LIST **word_list, char *word, size_t *n_words) {
 	size_t original_n_words = *n_words;
 	char *extension = word + 1;
 	char wd[PATH_MAX];
@@ -130,7 +129,7 @@ static WORD_LIST **fill_glob(WORD_LIST ***list, char *word, size_t *n_words) {
 
 static int handle_glob(WORD_LIST ***word_list, char *word, size_t *n_words) {
 	if (word[0] == '*' && word[1] == '.') {
-		*word_list = fill_glob(word_list, word, n_words);
+		*word_list = fill_glob(*word_list, word, n_words);
 		return 1;
 	}
 	return 0;
