@@ -6,6 +6,14 @@
 #include "task.h"
 #include "exit_code.h"
 
+#ifdef EXTRA_CREDIT
+#include <dirent.h>
+#include <sys/types.h>
+#include <limits.h>
+#include <pwd.h>
+#include <unistd.h>
+#endif
+
 static void free_word_list(WORD_LIST *word_list) {
 	WORD_LIST *current = NULL;
 	while (word_list != NULL) {
@@ -75,14 +83,73 @@ static char *get_env_var(char *word) {
 	return strdup(var);
 }
 
-static WORD_LIST *process_word(WORD_LIST *word_list, char *word, WORD_LIST **prev) {
-	if (*word == '$') {
-		word = get_env_var(word);
-	} else {
-		word = strdup(word);
+#ifdef EXTRA_CREDIT
+static WORD_LIST *fill_glob(WORD_LIST *word_list, char *word, WORD_LIST **prev, size_t *n_words) {
+	size_t original_n_words = *n_words;
+	char *extension = word + 1;
+	char wd[PATH_MAX];
+	char *current_directory_str = getcwd(wd, PATH_MAX);
+	if (current_directory_str == NULL) {
+		perror("Could not open current directory");
+		return word_list;
 	}
-	word_list->word = word;
+	DIR *current_directory = opendir(current_directory_str);
+	if (current_directory == NULL) {
+		perror("Could not open current directly");
+		return word_list;
+	}
+	while (1) {
+		errno = 0;
+		struct dirent *entry = readdir(current_directory);
+		if (entry == NULL) {
+			if (errno != 0) perror("Could not open entry in current directory");
+			break;
+		}
+		if (strstr(entry->d_name, extension) == NULL) continue;
+		word_list->word = strdup(entry->d_name);
+		*prev = word_list;
+		WORD_LIST *next_list = malloc(sizeof(WORD_LIST));
+		if (next_list == NULL) {
+			fprintf(stderr, "Could not malloc a word list\n");
+			return NULL;
+		}
+		word_list->next = next_list;
+		word_list = next_list;
+		word_list->next = NULL;
+		++(*n_words);
+	}
+	closedir(current_directory);
+	if (original_n_words == *n_words) {
+		WORD_LIST *next_list = malloc(sizeof(WORD_LIST));
+		if (next_list == NULL) {
+			fprintf(stderr, "Could not malloc a word list\n");
+			return NULL;
+		}
+		*prev = word_list;
+		word_list->word = strdup(word);
+		word_list->next = next_list;
+		word_list = next_list;
+		word_list->next = NULL;
+		++(*n_words);
+	}
 	return word_list;
+}
+
+static int handle_glob(WORD_LIST **word_list, char *word, WORD_LIST **prev, size_t *n_words) {
+	if (word[0] == '*' && word[1] == '.') {
+		*word_list = fill_glob(*word_list, word, prev, n_words);
+		return 1;
+	}
+	return 0;
+}
+#endif
+
+static char *process_word(char *word) {
+	if (*word == '$') {
+		return get_env_var(word);
+	} else {
+		return strdup(word);
+	}
 }
 
 /* Returns 1 if token was a redirection. 0 if not */
@@ -118,7 +185,13 @@ TASK *parse_task(char *string_to_parse) {
 		last_token = token;
 		if (prev == NULL && token[0] == '#') break;
 		if (handle_redirection(task, token) > 0) continue;
-		word_list = process_word(word_list, token, &prev);
+#ifdef EXTRA_CREDIT
+		if (handle_glob(&word_list, token, &prev, &n_words)) {
+			if (word_list == NULL) goto parse_task_failed;
+			continue;
+		}
+#endif
+		word_list->word = process_word(token);
 		if (word_list->word == NULL) goto parse_task_failed;
 		WORD_LIST *next_list = malloc(sizeof(WORD_LIST));
 		if (next_list == NULL) goto parse_task_failed;
