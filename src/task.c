@@ -142,6 +142,51 @@ static int handle_glob(WORD_LIST **word_list, char *word, WORD_LIST **prev, size
 	}
 	return 0;
 }
+
+void free_pipeline(PIPELINE *pipeline) {
+	free(pipeline->full_command);
+	PIPELINE_LIST *current = pipeline->list;
+	while (current) {
+		PIPELINE *prev = pipeline;
+		free_task(current->task);
+		current = current->next;
+		free(prev);
+	}
+}
+
+PIPELINE *parse_pipeline(char *string_to_parse) {
+	char *s = string_to_parse;
+	char *token = NULL;
+	PIPELINE *pipeline = malloc(sizeof(PIPELINE));
+	PIPELINE_LIST *prev = NULL;
+	pipeline->list = NULL;
+	if (pipeline == NULL) goto parse_pipeline_finish;
+	pipeline->full_command = strdup(string_to_parse);
+	if (pipeline->full_command == NULL) goto parse_pipeline_failed;
+	while ((token = strtok_r(s, "|", &s))) {
+		TASK *task = parse_task(token);
+		if (task == TASK_EMPTY) continue;
+		else if (task == TASK_FAILED) goto parse_pipeline_failed;
+		PIPELINE_LIST *list = malloc(sizeof(PIPELINE_LIST));
+		if (list == NULL) goto parse_pipeline_failed;
+		if (prev == NULL) pipeline->list = list;
+		else prev->next = list;
+		list->task = task;
+		list->next = NULL;
+		prev = list;
+	}
+	if (pipeline->list == NULL) {
+		free_pipeline(pipeline);
+		return PIPELINE_EMPTY;
+	}
+	goto parse_pipeline_finish;
+parse_pipeline_failed:
+		free_pipeline(pipeline);
+		pipeline = PIPELINE_FAILED;
+parse_pipeline_finish:
+	return pipeline;
+}
+
 #endif
 
 static char *process_word(char *word) {
