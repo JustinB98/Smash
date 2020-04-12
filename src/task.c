@@ -158,8 +158,8 @@ PIPELINE *parse_pipeline(char *string_to_parse) {
 	char *s = string_to_parse;
 	char *token = NULL;
 	PIPELINE *pipeline = malloc(sizeof(PIPELINE));
-	PIPELINE_LIST *prev = NULL;
 	pipeline->list = NULL;
+	PIPELINE_LIST **list = &pipeline->list;
 	if (pipeline == NULL) goto parse_pipeline_finish;
 	pipeline->full_command = strdup(string_to_parse);
 	if (pipeline->full_command == NULL) goto parse_pipeline_failed;
@@ -167,13 +167,11 @@ PIPELINE *parse_pipeline(char *string_to_parse) {
 		TASK *task = parse_task(token);
 		if (task == TASK_EMPTY) continue;
 		else if (task == TASK_FAILED) goto parse_pipeline_failed;
-		PIPELINE_LIST *list = malloc(sizeof(PIPELINE_LIST));
-		if (list == NULL) goto parse_pipeline_failed;
-		if (prev == NULL) pipeline->list = list;
-		else prev->next = list;
-		list->task = task;
-		list->next = NULL;
-		prev = list;
+		*list = malloc(sizeof(PIPELINE_LIST));
+		if (*list == NULL) goto parse_pipeline_failed;
+		(*list)->next = NULL;
+		(*list)->task = task;
+		list = &((*list)->next);
 	}
 	if (pipeline->list == NULL) {
 		free_pipeline(pipeline);
