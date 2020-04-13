@@ -149,6 +149,7 @@ void free_pipeline(PIPELINE *pipeline) {
 PIPELINE *parse_pipeline(char *string_to_parse) {
 	char *s = string_to_parse;
 	char *token = NULL;
+	size_t n_pipelines = 0;
 	PIPELINE *pipeline = malloc(sizeof(PIPELINE));
 	pipeline->list = NULL;
 	PIPELINE_LIST **list = &pipeline->list;
@@ -164,11 +165,13 @@ PIPELINE *parse_pipeline(char *string_to_parse) {
 		(*list)->next = NULL;
 		(*list)->task = task;
 		list = &((*list)->next);
+		++n_pipelines;
 	}
 	if (pipeline->list == NULL) {
 		free_pipeline(pipeline);
 		return PIPELINE_EMPTY;
 	}
+	pipeline->n_pipelines = n_pipelines;
 	goto parse_pipeline_finish;
 parse_pipeline_failed:
 		free_pipeline(pipeline);
