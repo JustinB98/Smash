@@ -257,6 +257,7 @@ void start_task(TASK *task, char *envp[]) {
 			fprintf(stderr, "Could not spawn process\n");
 			return;
 		} else if (pid == 0) {
+			setpgid(getpid(), getpid());
 #ifdef EXTRA_CREDIT
 			child_process_start_pipeline(task, envp);
 #else
@@ -275,7 +276,7 @@ void start_task(TASK *task, char *envp[]) {
 			if (result == 0) free_job(job);
 		} else {
 			job_table_insert(job);
-			kill(pid, SIGTTIN);
+			killpg(pid, SIGTTIN);
 		}
 		sigprocmask(SIG_SETMASK, &oset, NULL);
 		sigstop_flag = 0;

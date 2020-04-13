@@ -21,13 +21,13 @@ int wait_for_process(JOB *job, sigset_t *oset, void (*onStop)(JOB *)) {
 		sigsuspend(oset);
 wait_for_process_skip_suspend:
 		if (sigstop_flag) {
-			kill(pid, SIGSTOP);
+			killpg(pid, SIGSTOP);
 			if (onStop) onStop(job);
 			sigstop_flag = 0;
 			return -1;
 		}
 		if (sigint_flag) {
-			kill(pid, SIGKILL);
+			killpg(pid, SIGKILL);
 			puts("");
 			sigint_flag = 0;
 		}

@@ -99,7 +99,7 @@ static int smash_fg(TASK *task) {
 	sigset_t set, oset;
 	sigfillset(&set);
 	sigprocmask(SIG_SETMASK, &set, &oset);
-	kill(job->pid, SIGCONT);
+	killpg(job->pid, SIGCONT);
 	int result = wait_for_process(job, &oset, NULL);
 	sigprocmask(SIG_SETMASK, &oset, NULL);
 	if (result == 0) {
@@ -111,7 +111,7 @@ static int smash_fg(TASK *task) {
 static int smash_bg(TASK *task) {
 	JOB *job = job_control_prereq(task);
 	if (job == NULL) return -1;
-	kill(job->pid, SIGCONT);
+	killpg(job->pid, SIGCONT);
 	return 1;
 }
 
@@ -135,7 +135,7 @@ static int smash_kill(TASK *task) {
 	char *jobstr_id = task_get_word(task, 2);
 	JOB *job = get_job_from_table(jobstr_id);
 	if (job == NULL) return -1;
-	kill(job->pid, signum);
+	killpg(job->pid, signum);
 	return 1;
 }
 
