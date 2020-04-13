@@ -139,11 +139,12 @@ void free_pipeline(PIPELINE *pipeline) {
 	free(pipeline->full_command);
 	PIPELINE_LIST *current = pipeline->list;
 	while (current) {
-		PIPELINE *prev = pipeline;
+		PIPELINE_LIST *prev = current;
 		free_task(current->task);
 		current = current->next;
 		free(prev);
 	}
+	free(pipeline);
 }
 
 PIPELINE *parse_pipeline(char *string_to_parse) {
@@ -166,6 +167,7 @@ PIPELINE *parse_pipeline(char *string_to_parse) {
 		(*list)->task = task;
 		list = &((*list)->next);
 		++n_pipelines;
+		pipeline->fg = task->fg;
 	}
 	if (pipeline->list == NULL) {
 		free_pipeline(pipeline);
