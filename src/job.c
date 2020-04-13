@@ -192,7 +192,7 @@ static void child_process_start_pipeline(PIPELINE *pipeline, char *envp[]) {
 	PIPELINE_LIST *pl = pipeline->list;
 	/* if (ifd != STDIN_FILENO) fcntl(ifd, F_SETFD, FD_CLOEXEC); */
 	/* added for readability */
-	int read_fd, write_fd;
+	int read_fd = -1, write_fd = -1;
 	pid_t cpids[pipeline->n_pipelines];
 	int i = 0;
 	while (pl != NULL) {
