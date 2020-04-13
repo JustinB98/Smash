@@ -31,6 +31,7 @@ typedef struct pipeline {
 	PIPELINE_LIST *list;
 	char *full_command;
 	size_t n_pipelines;
+	int fg;
 } PIPELINE;
 
 PIPELINE *parse_pipeline(char *string_to_parse);
