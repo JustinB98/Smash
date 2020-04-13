@@ -11,14 +11,22 @@ typedef enum job_status {
 } JOB_STATUS;
 
 typedef struct job {
+#ifdef EXTRA_CREDIT
+	PIPELINE *task;
+#else
 	TASK *task;
+#endif
 	int jobid;
 	JOB_STATUS status;
 	pid_t pid;
 	int exit_code;
 } JOB;
 
+#ifdef EXTRA_CREDIT
+void start_task(PIPELINE *pipeline, char *envp[]);
+#else
 void start_task(TASK *task, char *envp[]);
+#endif
 
 void free_job(JOB *job);
 
