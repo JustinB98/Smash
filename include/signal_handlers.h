@@ -4,6 +4,8 @@
 
 volatile sig_atomic_t sigint_flag, sigstop_flag, sigchld_flag;
 
+void install_signal_handler(int sig, void (*handler)(int));
+
 void signal_handlers_init();
 
 /*

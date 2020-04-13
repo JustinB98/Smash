@@ -14,7 +14,7 @@ static void set_up_sigaction(struct sigaction *action, void (*handler)(int)) {
 	action->sa_flags = SA_RESTART;
 }
 
-static void install_signal_handler(int sig, void (*handler)(int)) {
+void install_signal_handler(int sig, void (*handler)(int)) {
 	struct sigaction action;
 	set_up_sigaction(&action, handler);
 	int result = sigaction(sig, &action, NULL); /* Don't really care about the old value */
