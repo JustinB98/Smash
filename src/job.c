@@ -85,7 +85,7 @@ static void child_process_start_job(TASK *task, char *envp[]) {
 	int stdin_fd, stdout_fd, stderr_fd;
 	fill_redirection_fds(task, &stdin_fd, &stdout_fd, &stderr_fd);
 	dup_fds(stdin_fd, stdout_fd, stderr_fd);
-	char *argv[task->n_words];
+	char *argv[task->n_words + 1];
 	fill_argv(task->word_list, task->n_words, argv);
 	if (execvp(argv[0], argv) < 0) {
 		fprintf(stderr, "Could not find program: %s\n", argv[0]);
