@@ -42,7 +42,11 @@ int main(int argc, char *argv[], char *env[]) {
 	char *buf = malloc(n);
 	int result = 0;
 	signal_handlers_init();
+#ifdef EXTRA_CREDIT
+	PIPELINE *task = NULL;
+#else
 	TASK *task = NULL;
+#endif
 	FILE *file_input = has_file_input() ? open_file_input() : stdin;
 	while (1) {
 		if (file_input == stdin) {
@@ -54,12 +58,27 @@ int main(int argc, char *argv[], char *env[]) {
 		/* messes with reading it */
 		fflush(file_input);
 		if (result < 0) break;
+#ifdef EXTRA_CREDIT
+		task = parse_pipeline(buf);
+#else
 		task = parse_task(buf);
-		if (task == TASK_EMPTY) goto end_of_main_loop;
-		else if (task == TASK_FAILED) break;
-		int exit_smash = should_exit(task);
+#endif
+		if (task == (void*)1) goto end_of_main_loop;
+		else if (task == (void*)0) break;
+		int exit_smash = 0;
+#ifdef EXTRA_CREDIT
+		if (task->n_pipelines == 1) {
+			exit_smash = should_exit(task->list->task);
+		}
+#else
+		exit_smash = should_exit(task);
+#endif
 		if (exit_smash > 0) {
+#ifdef EXTRA_CREDIT
+			free_pipeline(task);
+#else
 			free_task(task);
+#endif
 			break;
 		}
 		else if (exit_smash == 0) {
