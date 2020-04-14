@@ -16,6 +16,7 @@
 #include "job_table.h"
 #include "debug.h"
 #include "parser.h"
+#include "metadata.h"
 
 void print_task_info(TASK *task) {
 	WORD_LIST *list = task->word_list;
@@ -40,6 +41,7 @@ static FILE *open_file_input() {
 
 int main(int argc, char *argv[], char *env[]) {
 	process_args(argc, argv);
+	metadata_init();
 	job_table_init();
 	size_t n = getpagesize();
 	char *buf = malloc(n);
