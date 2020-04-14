@@ -17,14 +17,15 @@
 
 #define print_smash_error(cmd, msg) fprintf(stderr, "-%s: %s: %s\n", PROGRAM_NAME, cmd, msg)
 #define print_smash_error_with_extra(cmd, extra, msg) fprintf(stderr, "-%s: %s: %s: %s\n", PROGRAM_NAME, cmd, extra, msg)
-#define print_smash_error_with_errno(cmd, extra) print_smash_error(cmd, extra, strerror(errno))
+#define print_smash_error_with_errno_and_extra(cmd, extra) print_smash_error_with_extra(cmd, extra, strerror(errno))
+#define print_smash_error_with_errno(cmd) print_smash_error(cmd, strerror(errno))
 #define print_smash_error_too_many_args(cmd) print_smash_error(cmd, "Too many arguments")
 #define print_smash_error_no_jobid(cmd, jobid) print_smash_error_with_extra(cmd, jobid, "no such job")
 #define print_smash_error_with_usage(cmd, usage) print_smash_error(cmd, usage)
 
 static int smash_exit(TASK *task) {
 	if (task->n_words != 1) { 
-		print_smash_error("exit", "");
+		print_smash_error_with_errno("exit");
 		set_exit_code_failure();
 		return -1;
 	} else return 1;
@@ -45,7 +46,7 @@ static int smash_cd(TASK *task) {
 	int result = chdir(path);
 	if (result < 0) {
 		fprintf(stderr, "Could not find %s\n", path);
-		print_smash_error("cd", path);
+		print_smash_error_with_errno_and_extra("cd", path);
 		set_exit_code_failure();
 		return -1;
 	}
@@ -62,7 +63,7 @@ static int smash_pwd(TASK *task) {
 	char wd[PATH_MAX];
 	char *result = getcwd(wd, PATH_MAX);
 	if (result == NULL) {
-		print_smash_error("pwd", "");
+		print_smash_error_with_errno("pwd");
 		set_exit_code_failure();
 		return -1;
 	}
