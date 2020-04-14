@@ -5,6 +5,7 @@
 
 #include "task.h"
 #include "pipeline.h"
+#include "parser.h"
 #include "exit_code.h"
 
 #ifdef EXTRA_CREDIT
@@ -106,6 +107,72 @@ static int handle_glob(WORD_LIST ***word_list, char *word, size_t *n_words) {
 	return 0;
 }
 
+PIPELINE *parse_pipeline(char *string_to_parse) {
+	char *s = string_to_parse;
+	char *token = NULL;
+	size_t n_pipelines = 0;
+	PIPELINE *pipeline = malloc(sizeof(PIPELINE));
+	pipeline->list = NULL;
+	PIPELINE_LIST **list = &pipeline->list;
+	if (pipeline == NULL) goto parse_pipeline_finish;
+	pipeline->full_command = strdup(string_to_parse);
+	if (pipeline->full_command == NULL) goto parse_pipeline_failed;
+	while ((token = strtok_r(s, "|", &s))) {
+		TASK *task = parse_task(token);
+		if (task == TASK_EMPTY) continue;
+		else if (task == TASK_FAILED) goto parse_pipeline_failed;
+		*list = malloc(sizeof(PIPELINE_LIST));
+		if (*list == NULL) goto parse_pipeline_failed;
+		(*list)->next = NULL;
+		(*list)->task = task;
+		list = &((*list)->next);
+		++n_pipelines;
+		pipeline->fg = task->fg;
+	}
+	if (pipeline->list == NULL) {
+		free_pipeline(pipeline);
+		return PIPELINE_EMPTY;
+	}
+	pipeline->n_pipelines = n_pipelines;
+	goto parse_pipeline_finish;
+parse_pipeline_failed:
+	free_pipeline(pipeline);
+	pipeline = PIPELINE_FAILED;
+parse_pipeline_finish:
+	return pipeline;
+}
+
+#else
+PIPELINE *parse_pipeline(char *string_to_parse) {
+	PIPELINE *pipeline = malloc(sizeof(PIPELINE));
+	pipeline->list = NULL;
+	if (pipeline == NULL) goto parse_pipeline_finish;
+	pipeline->full_command = strdup(string_to_parse);
+	if (pipeline->full_command == NULL) goto parse_pipeline_failed;
+	PIPELINE_LIST **list = &(pipeline->list);
+	TASK *task = parse_task(string_to_parse);
+	if (task == TASK_EMPTY) goto parse_pipeline_empty;
+	else if (task == TASK_FAILED) goto parse_pipeline_failed;
+	*list = malloc(sizeof(PIPELINE_LIST));
+	if (*list == NULL) goto parse_pipeline_failed;
+	(*list)->next = NULL;
+	(*list)->task = task;
+	pipeline->n_pipelines = 1;
+	pipeline->fg = task->fg;
+parse_pipeline_empty:
+	if (pipeline->list == NULL) {
+		free_pipeline(pipeline);
+		return PIPELINE_EMPTY;
+	}
+	goto parse_pipeline_finish;
+parse_pipeline_failed:
+	free_pipeline(pipeline);
+	pipeline = PIPELINE_FAILED;
+parse_pipeline_finish:
+	return pipeline;
+}
+
+
 #endif
 
 static char *process_word(char *word) {
@@ -181,41 +248,6 @@ TASK *parse_task(char *string_to_parse) {
 parse_task_failed:
 	free_task(task);
 	return TASK_FAILED;
-}
-
-PIPELINE *parse_pipeline(char *string_to_parse) {
-	char *s = string_to_parse;
-	char *token = NULL;
-	size_t n_pipelines = 0;
-	PIPELINE *pipeline = malloc(sizeof(PIPELINE));
-	pipeline->list = NULL;
-	PIPELINE_LIST **list = &pipeline->list;
-	if (pipeline == NULL) goto parse_pipeline_finish;
-	pipeline->full_command = strdup(string_to_parse);
-	if (pipeline->full_command == NULL) goto parse_pipeline_failed;
-	while ((token = strtok_r(s, "|", &s))) {
-		TASK *task = parse_task(token);
-		if (task == TASK_EMPTY) continue;
-		else if (task == TASK_FAILED) goto parse_pipeline_failed;
-		*list = malloc(sizeof(PIPELINE_LIST));
-		if (*list == NULL) goto parse_pipeline_failed;
-		(*list)->next = NULL;
-		(*list)->task = task;
-		list = &((*list)->next);
-		++n_pipelines;
-		pipeline->fg = task->fg;
-	}
-	if (pipeline->list == NULL) {
-		free_pipeline(pipeline);
-		return PIPELINE_EMPTY;
-	}
-	pipeline->n_pipelines = n_pipelines;
-	goto parse_pipeline_finish;
-parse_pipeline_failed:
-	free_pipeline(pipeline);
-	pipeline = PIPELINE_FAILED;
-parse_pipeline_finish:
-	return pipeline;
 }
 
 

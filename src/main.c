@@ -45,11 +45,7 @@ int main(int argc, char *argv[], char *env[]) {
 	char *buf = malloc(n);
 	int result = 0;
 	signal_handlers_init();
-#ifdef EXTRA_CREDIT
-	PIPELINE *task = NULL;
-#else
-	TASK *task = NULL;
-#endif
+	PIPELINE *pipeline = NULL;
 	FILE *file_input = has_file_input() ? open_file_input() : stdin;
 	while (1) {
 		if (file_input == stdin) {
@@ -61,31 +57,19 @@ int main(int argc, char *argv[], char *env[]) {
 		/* messes with reading it */
 		fflush(file_input);
 		if (result < 0) break;
-#ifdef EXTRA_CREDIT
-		task = parse_pipeline(buf);
-#else
-		task = parse_task(buf);
-#endif
-		if (task == (void*)1) goto end_of_main_loop;
-		else if (task == (void*)0) break;
+		pipeline = parse_pipeline(buf);
+		if (pipeline == PIPELINE_EMPTY) goto end_of_main_loop;
+		else if (pipeline == PIPELINE_FAILED) break;
 		int exit_smash = 0;
-#ifdef EXTRA_CREDIT
-		if (task->n_pipelines == 1) {
-			exit_smash = should_exit(task->list->task);
+		if (pipeline->n_pipelines == 1) {
+			exit_smash = should_exit(pipeline_get_task(pipeline, 0));
 		}
-#else
-		exit_smash = should_exit(task);
-#endif
 		if (exit_smash > 0) {
-#ifdef EXTRA_CREDIT
-			free_pipeline(task);
-#else
-			free_task(task);
-#endif
+			free_pipeline(pipeline);
 			break;
 		}
 		else if (exit_smash == 0) {
-			start_task(task, env);
+			start_pipeline(pipeline, env);
 		}
 end_of_main_loop:
 		print_and_remove_finished_jobs();

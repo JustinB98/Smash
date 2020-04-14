@@ -20,7 +20,7 @@ int wait_for_process(JOB *job, sigset_t *oset, void (*onStop)(JOB *)) {
 		/* Want to ensure we don't go into deadlock waiting for a child that */
 		/* is already done */
 		if (sigchld_flag) goto wait_for_process_skip_suspend;
-		print_debug_message("Suspending... waiting for foreground process: %s", job->task->full_command);
+		print_debug_message("Suspending... waiting for foreground process: %s", job->pipeline->full_command);
 		sigsuspend(oset);
 wait_for_process_skip_suspend:
 		if (sigstop_flag) {
@@ -44,7 +44,7 @@ wait_for_process_skip_suspend:
 			if (wait_pid_result == pid) {
 				int exit_code = WEXITSTATUS(exit_status);
 				print_debug_message("ENDED FOREGROUND JOB: %s (ret=%d)",
-						job->task->full_command,
+						job->pipeline->full_command,
 						exit_code);
 				set_exit_code(exit_code);
 				return 0;

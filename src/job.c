@@ -20,11 +20,7 @@
 #include "debug.h"
 
 void free_job(JOB *job) {
-#ifdef EXTRA_CREDIT
-	free_pipeline(job->task);
-#else
-	free_task(job->task);
-#endif
+	free_pipeline(job->pipeline);
 	free(job);
 }
 
@@ -210,31 +206,19 @@ static void child_process_start_pipeline(PIPELINE *pipeline, char *envp[]) {
 
 void print_new_background_job(JOB *job) {
 	int jobid = job_table_insert(job);
-	printf("[%d] Stopped %s\n", jobid, job->task->full_command);
+	printf("[%d] Stopped %s\n", jobid, job->pipeline->full_command);
 }
 
-#ifdef EXTRA_CREDIT
-void start_task(PIPELINE *task, char *envp[]) {
-#else
-void start_task(TASK *task, char *envp[]) {
-#endif
+void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		int smash_command = 0;
 
-#ifdef EXTRA_CREDIT
-		if (task->n_pipelines == 1) {
-			smash_command = execute_smash_command(task->list->task);
-		}
-#else
-		smash_command = execute_smash_command(task);
-#endif
-		if (smash_command != 0) {
-#ifdef EXTRA_CREDIT
-			free_pipeline(task);
-#else
-			free_task(task);
-#endif
-			set_exit_code(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-			return;
+		if (pipeline->n_pipelines == 1) {
+			smash_command = execute_smash_command(pipeline_get_task(pipeline, 0));
+			if (smash_command != 0) {
+				free_pipeline(pipeline);
+				set_exit_code(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+				return;
+			}
 		}
 		sigset_t set, oset;
 		sigfillset(&set);
@@ -242,24 +226,28 @@ void start_task(TASK *task, char *envp[]) {
 		sigstop_flag = 0;
 		pid_t pid = fork();
 		if (pid < 0) {
-			fprintf(stderr, "Could not spawn process\n");
+			perror("Could not spawn process");
 			return;
 		} else if (pid == 0) {
-			setpgid(getpid(), getpid());
+			int ret = setpgid(getpid(), getpid());
+			if (ret < 0) {
+				perror("Could not set pgid of child process");
+				abort();
+			}
 #ifdef EXTRA_CREDIT
-			child_process_start_pipeline(task, envp);
+			child_process_start_pipeline(pipeline, envp);
 #else
-			child_process_start_job(task, envp);
+			child_process_start_job(pipeline_get_task(pipeline, 0), envp);
 #endif
 		}
-		print_debug_message("RUNNING: %s", task->full_command);
+		print_debug_message("RUNNING: %s", pipeline->full_command);
 		JOB *job = malloc(sizeof(JOB));
 		/* TODO handle malloc error */
 		if (job == NULL) return;
-		job->task = task;
+		job->pipeline = pipeline;
 		job->status = 0;
 		job->pid = pid;
-		if (task->fg) {
+		if (pipeline->fg) {
 			int result = wait_for_process(job, &oset, print_new_background_job);
 			if (result == 0) free_job(job);
 		} else {
@@ -268,5 +256,5 @@ void start_task(TASK *task, char *envp[]) {
 		}
 		sigprocmask(SIG_SETMASK, &oset, NULL);
 		sigstop_flag = 0;
-	}
+}
 

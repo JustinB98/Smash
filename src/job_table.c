@@ -37,7 +37,7 @@ int job_table_insert(JOB *job) {
 void job_table_remove(JOB *job) {
 	/* TODO what if job is NULL */
 	print_debug_message("Removing job %d (pid=%d) \'%s\' from the job table",
-			job->jobid, job->pid, job->task->full_command);
+			job->jobid, job->pid, job->pipeline->full_command);
 	hashtable_remove(job_id_table, job->jobid, NULL);
 	hashtable_remove(pid_table, job->pid, NULL);
 	queue_remove(job_id_queue, job->jobid);
@@ -58,7 +58,7 @@ static JOB *job_table_change_status_of_job(pid_t pid, int status) {
 	JOB *job = hashtable_find(pid_table, pid);
 	print_debug_message("[%d] %d %s status %s -> %s",
 			job->jobid, pid,
-			job->task->full_command,
+			job->pipeline->full_command,
 			job_status_names[job->status],
 			job_status_names[status]);
 	job->status = status;
@@ -97,7 +97,7 @@ static void print_and_remove_finished_job(JOB *job) {
 	printf("[%d] %d %s \'%s\' -------- Exit code: %d\n",
 			job->jobid, job->pid,
 			job_status_names[job->status],
-			job->task->full_command,
+			job->pipeline->full_command,
 			job->exit_code);
 	job_table_remove(job);
 }
@@ -109,7 +109,7 @@ static void print_single_job(JOB *job) {
 		printf("[%d] %d %s \'%s\'\n",
 				job->jobid, job->pid,
 				job_status_names[job->status],
-				job->task->full_command);
+				job->pipeline->full_command);
 	}
 }
 
