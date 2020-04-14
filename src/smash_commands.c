@@ -22,6 +22,7 @@
 #define print_smash_error_too_many_args(cmd) print_smash_error(cmd, "Too many arguments")
 #define print_smash_error_no_jobid(cmd, jobid) print_smash_error_with_extra(cmd, jobid, "no such job")
 #define print_smash_error_with_usage(cmd, usage) print_smash_error(cmd, usage)
+#define print_smash_error_no_job_control(cmd) print_smash_error(cmd, "no job control")
 
 static int smash_exit(TASK *task) {
 	if (task->n_words != 1) { 
@@ -76,6 +77,9 @@ static int smash_jobs(TASK *task) {
 	if (task->n_words > 1) {
 		print_smash_error_too_many_args("jobs");
 		return -1;
+	} else if (get_smash_pid() != getpid()) {
+		print_smash_error_no_job_control("jobs");
+		return -1;
 	}
 	print_all_jobs();
 	return 1;
@@ -108,6 +112,10 @@ static JOB *job_control_prereq(TASK *task) {
 static int smash_fg(TASK *task) {
 	JOB *job = job_control_prereq(task);
 	if (job == NULL) return -1;
+	else if (get_smash_pid() != getpid()) {
+		print_smash_error_no_job_control("fg");
+		return -1;
+	}
 	sigset_t set, oset;
 	sigfillset(&set);
 	sigprocmask(SIG_SETMASK, &set, &oset);
@@ -123,6 +131,10 @@ static int smash_fg(TASK *task) {
 static int smash_bg(TASK *task) {
 	JOB *job = job_control_prereq(task);
 	if (job == NULL) return -1;
+	if (get_smash_pid() != getpid()) {
+		print_smash_error_no_job_control("bg");
+		return -1;
+	}
 	killpg(job->pid, SIGCONT);
 	return 1;
 }
