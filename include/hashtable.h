@@ -1,8 +1,6 @@
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
 
-#include "linked_list.h"
-
 typedef struct hashtable {
 	int size;
 	LINKED_LIST **slots;

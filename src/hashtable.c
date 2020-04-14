@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "linked_list.h"
 #include "hashtable.h"
 
 static LINKED_LIST *get_slot(HASHTABLE *hashtable, int key) {

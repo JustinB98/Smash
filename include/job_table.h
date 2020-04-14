@@ -1,6 +1,5 @@
 #ifndef JOB_TABLE_H
 #define JOB_TABLE_H
-#include "job.h"
 
 void job_table_init();
 

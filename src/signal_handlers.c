@@ -7,6 +7,7 @@
 
 #include "task.h"
 #include "pipeline.h"
+#include "job.h"
 #include "signal_handlers.h"
 #include "job_table.h"
 

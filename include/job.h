@@ -1,8 +1,6 @@
 #ifndef JOB_H
 #define JOB_H
 
-#include "task.h"
-
 typedef enum job_status {
 	RUNNING,
 	STOPPED,
@@ -11,7 +9,11 @@ typedef enum job_status {
 } JOB_STATUS;
 
 typedef struct job {
+#ifdef EXTRA_CREDIT
 	PIPELINE *task;
+#else
+	TASK *task;
+#endif
 	int jobid;
 	JOB_STATUS status;
 	pid_t pid;

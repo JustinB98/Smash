@@ -10,6 +10,7 @@
 #include "task.h"
 #include "pipeline.h"
 #include "exit_code.h"
+#include "job.h"
 #include "job_table.h"
 #include "foreground_job.h"
 

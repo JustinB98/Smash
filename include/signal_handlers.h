@@ -1,6 +1,5 @@
 #ifndef SIGNAL_HANDLERS_H
 #define SIGNAL_HANDLERS_H
-#include <signal.h>
 
 volatile sig_atomic_t sigint_flag, sigstop_flag, sigchld_flag;
 

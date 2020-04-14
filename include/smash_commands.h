@@ -1,6 +1,5 @@
 #ifndef SMASH_COMMANDS_H
 #define SMASH_COMMANDS_H
-#include "task.h"
 
 /*
  * Executes a command specific to smash
