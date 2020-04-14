@@ -5,6 +5,8 @@
 #include <errno.h>
 #include <sys/wait.h>
 
+#include "task.h"
+#include "pipeline.h"
 #include "signal_handlers.h"
 #include "job_table.h"
 

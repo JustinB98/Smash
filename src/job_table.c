@@ -5,6 +5,7 @@
 #include "hashtable.h"
 #include "queue.h"
 #include "task.h"
+#include "pipeline.h"
 #include "job.h"
 #include "debug.h"
 

@@ -10,6 +10,7 @@
 #include <signal.h>
 
 #include "task.h"
+#include "pipeline.h"
 #include "job.h"
 #include "exit_code.h"
 #include "smash_commands.h"
@@ -146,23 +147,13 @@ static void get_pipes(int *read_fd, int *write_fd) {
 	// fcntl(*write_fd, F_SETFD, FD_CLOEXEC);
 }
 
-volatile sig_atomic_t sigcont_flag;
-
-static void sigcont_handler(int signum) {
-	sigcont_flag = 1;
-}
-
 static void wait_for_pipeline_to_end(pid_t cpids[], size_t n_pipelines) {
-	install_signal_handler(SIGCONT, sigcont_handler);
 	sigset_t empty_set;
 	sigemptyset(&empty_set);
 	int exit_status = 0;
 	pid_t last_pid = cpids[n_pipelines - 1];
 	while (n_pipelines > 0) {
 		sigsuspend(&empty_set);
-		if (sigint_flag) killpg(getpid(), SIGINT);
-		if (sigcont_flag) killpg(getpid(), SIGCONT);
-		if (sigstop_flag) killpg(getpid(), SIGSTOP);
 		if (sigchld_flag) {
 			pid_t rpid;
 			int wstatus;
@@ -173,10 +164,7 @@ static void wait_for_pipeline_to_end(pid_t cpids[], size_t n_pipelines) {
 				--n_pipelines;
 			}
 		}
-		sigint_flag = 0;
-		sigstop_flag = 0;
 		sigchld_flag = 0;
-		sigcont_flag = 0;
 	}
 	exit(exit_status);
 }
@@ -276,7 +264,7 @@ void start_task(TASK *task, char *envp[]) {
 			if (result == 0) free_job(job);
 		} else {
 			job_table_insert(job);
-			killpg(pid, SIGTTIN);
+			// killpg(pid, SIGTTIN);
 		}
 		sigprocmask(SIG_SETMASK, &oset, NULL);
 		sigstop_flag = 0;

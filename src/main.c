@@ -6,6 +6,7 @@
 
 #include "input.h"
 #include "task.h"
+#include "pipeline.h"
 #include "job.h"
 #include "exit_code.h"
 #include "signal_handlers.h"
@@ -13,6 +14,7 @@
 #include "args.h"
 #include "job_table.h"
 #include "debug.h"
+#include "parser.h"
 
 void print_task_info(TASK *task) {
 	WORD_LIST *list = task->word_list;
