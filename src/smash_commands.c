@@ -13,10 +13,18 @@
 #include "job.h"
 #include "job_table.h"
 #include "foreground_job.h"
+#include "metadata.h"
+
+#define print_smash_error(cmd, msg) fprintf(stderr, "-%s: %s: %s\n", PROGRAM_NAME, cmd, msg)
+#define print_smash_error_with_extra(cmd, extra, msg) fprintf(stderr, "-%s: %s: %s: %s\n", PROGRAM_NAME, cmd, extra, msg)
+#define print_smash_error_with_errno(cmd, extra) print_smash_error(cmd, extra, strerror(errno))
+#define print_smash_error_too_many_args(cmd) print_smash_error(cmd, "Too many arguments")
+#define print_smash_error_no_jobid(cmd, jobid) print_smash_error_with_extra(cmd, jobid, "no such job")
+#define print_smash_error_with_usage(cmd, usage) print_smash_error(cmd, usage)
 
 static int smash_exit(TASK *task) {
 	if (task->n_words != 1) { 
-		fprintf(stderr, "smash: Too many arguments for exit\nUSAGE: exit\n");
+		print_smash_error("exit", "");
 		set_exit_code_failure();
 		return -1;
 	} else return 1;
@@ -24,7 +32,7 @@ static int smash_exit(TASK *task) {
 
 static int smash_cd(TASK *task) {
 	if (task->n_words > 2) {
-		fprintf(stderr, "smash: Too many arguments for cd\nUSAGE: cd [PATH]\n");
+		print_smash_error_too_many_args("cd");
 		set_exit_code_failure();
 		return -1;
 	}
@@ -37,6 +45,7 @@ static int smash_cd(TASK *task) {
 	int result = chdir(path);
 	if (result < 0) {
 		fprintf(stderr, "Could not find %s\n", path);
+		print_smash_error("cd", path);
 		set_exit_code_failure();
 		return -1;
 	}
@@ -46,14 +55,14 @@ static int smash_cd(TASK *task) {
 
 static int smash_pwd(TASK *task) {
 	if (task->n_words > 1) {
-		fprintf(stderr, "smash: Too many arguments for pwd\nUSAGE: pwd\n");
+		print_smash_error_too_many_args("pwd");
 		set_exit_code_failure();
 		return -1;
 	}
 	char wd[PATH_MAX];
 	char *result = getcwd(wd, PATH_MAX);
 	if (result == NULL) {
-		fprintf(stderr, "smash: Could not get current working directory\n");
+		print_smash_error("pwd", "");
 		set_exit_code_failure();
 		return -1;
 	}
@@ -64,22 +73,22 @@ static int smash_pwd(TASK *task) {
 
 static int smash_jobs(TASK *task) {
 	if (task->n_words > 1) {
-		fprintf(stderr, "smash: Too many arguments for jobs\n");
+		print_smash_error_too_many_args("jobs");
 		return -1;
 	}
 	print_all_jobs();
 	return 1;
 }
 
-static JOB *get_job_from_table(char *jobid_str) {
+static JOB *get_job_from_table(char *jobid_str, char *cmd) {
 	int jobid;
 	if (sscanf(jobid_str, "%d", &jobid) < 0) {
-		fprintf(stderr, "smash: Job id must be a number\n");
+		print_smash_error_no_jobid(cmd, jobid_str);
 		return NULL;
 	}
 	JOB *job = job_table_find(jobid);
 	if (job == NULL) {
-		fprintf(stderr, "smash: Could not find job number%d\n", jobid);
+		print_smash_error_no_jobid(cmd, jobid_str);
 	}
 	return job;
 
@@ -88,11 +97,11 @@ static JOB *get_job_from_table(char *jobid_str) {
 static JOB *job_control_prereq(TASK *task) {
 	char *cmd = task_get_command(task);
 	if (task->n_words != 2) {
-		fprintf(stderr, "smash: Incorrect usage of %1$s\nUSAGE: %1$s <jobid>\n", cmd);
+		print_smash_error(cmd, "Only one arg <jobid>");
 		return NULL;
 	}
 	char *jobid_str = task_get_word(task, 1);
-	return get_job_from_table(jobid_str);
+	return get_job_from_table(jobid_str, cmd);
 }
 
 static int smash_fg(TASK *task) {
@@ -120,22 +129,23 @@ static int smash_bg(TASK *task) {
 static int smash_kill(TASK *task) {
 	char *cmd = task_get_command(task);
 	if (task->n_words != 3) {
-		fprintf(stderr, "smash: Incorrect usage of %1$s\nUSAGE: %1$s -<SIGNUM> <jobid>\n", cmd);
+		print_smash_error_with_usage("kill", "USAGE: kill -<SIGNUM> <jobid>");
 		return -1;
 	}
 	char *signum_str = task_get_word(task, 1);
 	int signum;
 	if (sscanf(signum_str, "%d", &signum) < 0 || (signum > 0)) {
-		fprintf(stderr, "smash: kill usage: kill -<SIGNUM> <jobid>\n");
+		print_smash_error_with_usage("kill", "USAGE: kill -<SIGNUM> <jobid>");
 		return -1;
 	}
 	signum = -signum;
-	if (signum > NSIG || signum < 0) {
-		fprintf(stderr, "smash: invalid signal\n");
+	/* Signal number without dash was already checked above */
+	if (signum > NSIG) {
+		print_smash_error_with_extra("kill", signum_str + 1, "Invalid signal specification");
 		return -1;
 	}
 	char *jobstr_id = task_get_word(task, 2);
-	JOB *job = get_job_from_table(jobstr_id);
+	JOB *job = get_job_from_table(jobstr_id, cmd);
 	if (job == NULL) return -1;
 	killpg(job->pid, signum);
 	return 1;
