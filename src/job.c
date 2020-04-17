@@ -110,6 +110,7 @@ static pid_t exe_command(TASK *task, int ifd, int ofd) {
 		/* Replace stdin with ifd and stdout with ofd */
 		int in_fd, out_fd, error_fd;
 		fill_redirection_fds(task, &in_fd, &out_fd, &error_fd);
+		// fprintf(stderr, "in_fd: %d out_fd: %d error_fd: %d ifd: %d ofd: %d\n", in_fd, out_fd, error_fd, ifd, ofd);
 		if (in_fd != STDIN_FILENO) {
 			close(ifd);
 			ifd = in_fd;
@@ -121,13 +122,21 @@ static pid_t exe_command(TASK *task, int ifd, int ofd) {
 		dup2(ifd, STDIN_FILENO);
 		dup2(ofd, STDOUT_FILENO);
 		dup2(error_fd, STDERR_FILENO);
+		int smash_command = execute_smash_command(task);
+		if (smash_command != 0) {
+			exit(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+		}
 		/* Doesn't return */
 		start_exec(task);
 	} else if (cpid < 0) {
-		fprintf(stderr, "Somewent went wrong when forking, aborting\n");
+		perror("Something went went wrong when forking, aborting");
 		abort();
 	} else {
-		setpgid(cpid, getpgid(getpid()));
+		int result = setpgid(cpid, getpgid(getpid()));
+		if (result < 0) {
+			perror("Could not set process ground for child");
+			abort();
+		}
 	}
 	return cpid;
 }
@@ -229,11 +238,12 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 			perror("Could not spawn process");
 			return;
 		} else if (pid == 0) {
-			int ret = setpgid(getpid(), getpid());
+			pid_t ret = setsid();
 			if (ret < 0) {
 				perror("Could not set pgid of child process");
 				abort();
 			}
+			// fprintf(stderr, "pg: %d pid: %d\n", getpgid(getpid()), getpid());
 #ifdef EXTRA_CREDIT
 			child_process_start_pipeline(pipeline, envp);
 #else
@@ -252,7 +262,11 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 			if (result == 0) free_job(job);
 		} else {
 			job_table_insert(job);
-			// killpg(pid, SIGTTIN);
+			int kill_result = kill(pid, SIGTTIN);
+			printf("kill result: %d\n", kill_result);
+			if (kill_result < 0) {
+				perror("kill");
+			}
 		}
 		sigprocmask(SIG_SETMASK, &oset, NULL);
 		sigstop_flag = 0;
