@@ -176,6 +176,7 @@ int execute_smash_command(TASK *task) {
 	else if (!strcmp(cmd, "bg")) return smash_bg(task);
 	else if (!strcmp(cmd, "kill")) return smash_kill(task);
 	else if (!strcmp(cmd, "echo")) return smash_echo(task);
+	else if (!strcmp(cmd, "exit")) return 1; /* Make sure it's a no op during a pipeline */
 	return 0;
 }
 
