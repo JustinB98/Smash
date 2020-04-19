@@ -14,6 +14,7 @@
 #include "job_table.h"
 #include "foreground_job.h"
 #include "metadata.h"
+#include "debug.h"
 
 #define print_smash_error(cmd, msg) fprintf(stderr, "-%s: %s: %s\n", PROGRAM_NAME, cmd, msg)
 #define print_smash_error_with_extra(cmd, extra, msg) fprintf(stderr, "-%s: %s: %s: %s\n", PROGRAM_NAME, cmd, extra, msg)
@@ -56,6 +57,7 @@ static int smash_cd(TASK *task) {
 }
 
 static int smash_pwd(TASK *task) {
+	if (get_smash_pid() == getpid()) return 0;
 	if (task->n_words > 1) {
 		print_smash_error_too_many_args("pwd");
 		set_exit_code_failure();
@@ -119,7 +121,7 @@ static int smash_fg(TASK *task) {
 	sigset_t set, oset;
 	sigfillset(&set);
 	sigprocmask(SIG_SETMASK, &set, &oset);
-	killpg(job->pid, SIGCONT);
+	kill(-job->pid, SIGCONT);
 	int result = wait_for_process(job, &oset, NULL);
 	sigprocmask(SIG_SETMASK, &oset, NULL);
 	if (result == 0) {
@@ -135,7 +137,7 @@ static int smash_bg(TASK *task) {
 		print_smash_error_no_job_control("bg");
 		return -1;
 	}
-	killpg(job->pid, SIGCONT);
+	kill(-job->pid, SIGCONT);
 	return 1;
 }
 
@@ -160,7 +162,16 @@ static int smash_kill(TASK *task) {
 	char *jobstr_id = task_get_word(task, 2);
 	JOB *job = get_job_from_table(jobstr_id, cmd);
 	if (job == NULL) return -1;
-	killpg(job->pid, signum);
+	kill(-job->pid, signum);
+	return 1;
+}
+
+static int smash_echo(TASK *task) {
+	if (get_smash_pid() == getpid()) return 0;
+	print_debug_message("Executing smash echo");
+	task_print_all_args(task);
+	puts("");
+	fflush(stdout);
 	return 1;
 }
 
@@ -172,6 +183,7 @@ int execute_smash_command(TASK *task) {
 	else if (!strcmp(cmd, "fg")) return smash_fg(task);
 	else if (!strcmp(cmd, "bg")) return smash_bg(task);
 	else if (!strcmp(cmd, "kill")) return smash_kill(task);
+	else if (!strcmp(cmd, "echo")) return smash_echo(task);
 	return 0;
 }
 
