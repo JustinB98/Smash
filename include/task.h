@@ -25,4 +25,6 @@ char *task_get_command(TASK *task);
 
 void free_task(TASK *task);
 
+void task_print_all_args(TASK *task);
+
 #endif /* TASK_H */

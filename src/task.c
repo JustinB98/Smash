@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include "task.h"
+#include "debug.h"
 
 static void free_word_list(WORD_LIST *word_list) {
 	WORD_LIST *current = NULL;
@@ -27,6 +28,22 @@ char *task_get_word(TASK *task, int index) {
 		current = current->next;
 	}
 	return current->word;
+}
+
+void task_print_all_args(TASK *task) {
+	/* Skip command and go to arg part of list */
+	WORD_LIST *current = task->word_list->next;
+	int words_printed = 0;
+	size_t n_words = task->n_words;
+	while (current) {
+		printf("%s", current->word);
+		if (words_printed < n_words) {
+			printf(" ");
+		}
+		++words_printed;
+		current = current->next;
+	}
+	print_debug_message("Printed %d for echo command", words_printed);
 }
 
 char *task_get_command(TASK *task) {
