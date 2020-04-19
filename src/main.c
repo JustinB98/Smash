@@ -59,7 +59,7 @@ int main(int argc, char *argv[], char *env[]) {
 		errno = 0;
 		result = get_input(file_input, &buf, &n, child_reaper);
 		if (result < 0) {
-			exit_code = errno == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+			exit_code = errno == 0 ? get_exit_code() : EXIT_FAILURE;
 			break;
 		}
 		/* File input needs to be flushed because appearently the new line from it */
@@ -88,5 +88,5 @@ end_of_main_loop:
 	if (file_input != stdin) fclose(file_input);
 	free(buf);
 	if (result < 0 && file_input == stdin) puts("exit");
-	return exit_smash ? exit_code : EXIT_SUCCESS;
+	return exit_code;
 }

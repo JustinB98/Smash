@@ -14,6 +14,7 @@
 #include "foreground_job.h"
 #include "metadata.h"
 #include "debug.h"
+#include "exit_code.h"
 
 #define print_smash_error(cmd, msg) fprintf(stderr, "-%s: %s: %s\n", PROGRAM_NAME, cmd, msg)
 #define print_smash_error_with_extra(cmd, extra, msg) fprintf(stderr, "-%s: %s: %s: %s\n", PROGRAM_NAME, cmd, extra, msg)
@@ -186,7 +187,7 @@ int should_exit(TASK *task, int *exit_code) {
 	int invalid_exit_args = smash_error_check(task);
 	if (invalid_exit_args < 0) return -1;
 	if (task->n_words == 1) {
-		*exit_code = 0;
+		*exit_code = get_exit_code();
 		return 1;
 	}
 	char *exit_arg = task_get_word(task, 1);
