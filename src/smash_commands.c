@@ -9,7 +9,6 @@
 
 #include "task.h"
 #include "pipeline.h"
-#include "exit_code.h"
 #include "job.h"
 #include "job_table.h"
 #include "foreground_job.h"
@@ -28,7 +27,6 @@
 static int smash_exit(TASK *task) {
 	if (task->n_words != 1) { 
 		print_smash_error_with_errno("exit");
-		set_exit_code_failure();
 		return -1;
 	} else return 1;
 }
@@ -36,7 +34,6 @@ static int smash_exit(TASK *task) {
 static int smash_cd(TASK *task) {
 	if (task->n_words > 2) {
 		print_smash_error_too_many_args("cd");
-		set_exit_code_failure();
 		return -1;
 	}
 	char *path = NULL;
@@ -49,10 +46,8 @@ static int smash_cd(TASK *task) {
 	if (result < 0) {
 		fprintf(stderr, "Could not find %s\n", path);
 		print_smash_error_with_errno_and_extra("cd", path);
-		set_exit_code_failure();
 		return -1;
 	}
-	set_exit_code_success();
 	return 1;
 }
 
@@ -60,18 +55,15 @@ static int smash_pwd(TASK *task) {
 	if (get_smash_pid() == getpid()) return 0;
 	if (task->n_words > 1) {
 		print_smash_error_too_many_args("pwd");
-		set_exit_code_failure();
 		return -1;
 	}
 	char wd[PATH_MAX];
 	char *result = getcwd(wd, PATH_MAX);
 	if (result == NULL) {
 		print_smash_error_with_errno("pwd");
-		set_exit_code_failure();
 		return -1;
 	}
 	puts(wd);
-	set_exit_code_success();
 	return 1;
 }
 
