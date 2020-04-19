@@ -7,7 +7,7 @@ BIND := .
 BLDD := build
 TSTD := shell_tests
 REGTSTD := $(TSTD)/reg_tests
-ECTSTD := $(TSTD)/extra_credit_tests
+ECTSTD := $(TSTD)/ec_tests
 VALTSTD := $(TSTD)/valgrind_tests
 INCF := -I $(INCD)
 CFLAGS := -O2 -g -Wall -Werror
@@ -71,7 +71,7 @@ tests: clean all run_reg_tests
 $(BLDD):
 	mkdir -p $@
 
-include $(ALL_DEPS)
+-include $(ALL_DEPS)
 
 $(BLDD)/%.o: $(SRCD)/%.c
 	$(CC) $(INCF) $(CFLAGS) $(DEPFLAGS) -c -o $@ $<
