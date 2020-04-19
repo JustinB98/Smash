@@ -1,6 +1,6 @@
 CC := gcc
 RM := rm
-SH := sh
+SH := bash
 SRCD := src
 INCD := include
 BIND := .
