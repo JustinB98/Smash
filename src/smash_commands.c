@@ -24,9 +24,9 @@
 #define print_smash_error_with_usage(cmd, usage) print_smash_error(cmd, usage)
 #define print_smash_error_no_job_control(cmd) print_smash_error(cmd, "no job control")
 
-static int smash_exit(TASK *task) {
-	if (task->n_words != 1) { 
-		print_smash_error_with_errno("exit");
+static int smash_error_check(TASK *task) {
+	if (task->n_words > 2) { 
+		print_smash_error_too_many_args("exit");
 		return -1;
 	} else return 1;
 }
@@ -179,9 +179,19 @@ int execute_smash_command(TASK *task) {
 	return 0;
 }
 
-int should_exit(TASK *task) {
+int should_exit(TASK *task, int *exit_code) {
 	char *cmd = task_get_command(task);
-	if (!strcmp(cmd, "exit")) {
-		return smash_exit(task);
-	} else return 0;
+	if (strcmp(cmd, "exit")) return 0;
+	int invalid_exit_args = smash_error_check(task);
+	if (invalid_exit_args < 0) return -1;
+	if (task->n_words == 1) {
+		*exit_code = 0;
+		return 1;
+	}
+	char *exit_arg = task_get_word(task, 1);
+	if (sscanf(exit_arg, "%d", exit_code) < 0) {
+		print_smash_error_with_extra("exit", exit_arg, "numeric argument required");
+		return -1;
+	}
+	return 1;
 }

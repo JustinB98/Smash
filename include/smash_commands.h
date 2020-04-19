@@ -17,6 +17,6 @@ int execute_smash_command(TASK *task);
  *				0 if task was not exit task
  *				-1 if task was an exit task, but had incorrect arguments
  */
-int should_exit(TASK *task);
+int should_exit(TASK *task, int *exit_code);
 
 #endif /* SMASH_COMMANDS_H */

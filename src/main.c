@@ -49,22 +49,30 @@ int main(int argc, char *argv[], char *env[]) {
 	signal_handlers_init();
 	PIPELINE *pipeline = NULL;
 	FILE *file_input = has_file_input() ? open_file_input() : stdin;
+	int exit_code = 0;
+	int exit_smash = 0;
 	while (1) {
 		if (file_input == stdin) {
 			printf("smash> ");
 			fflush(stdout);
 		}
+		errno = 0;
 		result = get_input(file_input, &buf, &n, child_reaper);
+		if (result < 0) {
+			exit_code = errno == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+			break;
+		}
 		/* File input needs to be flushed because appearently the new line from it */
 		/* messes with reading it */
 		fflush(file_input);
-		if (result < 0) break;
 		pipeline = parse_pipeline(buf);
 		if (pipeline == PIPELINE_EMPTY) goto end_of_main_loop;
-		else if (pipeline == PIPELINE_FAILED) break;
-		int exit_smash = 0;
+		else if (pipeline == PIPELINE_FAILED) {
+			exit_code = EXIT_FAILURE;
+			break;
+		}
 		if (pipeline->n_pipelines == 1) {
-			exit_smash = should_exit(pipeline_get_task(pipeline, 0));
+			exit_smash = should_exit(pipeline_get_task(pipeline, 0), &exit_code);
 		}
 		if (exit_smash > 0) {
 			free_pipeline(pipeline);
@@ -80,5 +88,5 @@ end_of_main_loop:
 	if (file_input != stdin) fclose(file_input);
 	free(buf);
 	if (result < 0 && file_input == stdin) puts("exit");
-	return EXIT_SUCCESS;
+	return exit_smash ? exit_code : EXIT_SUCCESS;
 }
