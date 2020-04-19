@@ -40,6 +40,7 @@ wait_for_process_skip_suspend:
 			print_debug_message("Received SIGCHLD signal while waiting for foreground process");
 			int exit_status;
 			pid_t wait_pid_result = waitpid(pid, &exit_status, WNOHANG);
+			print_debug_message("Tried to reap foreground process. Result: %d", wait_pid_result);
 			child_reaper();
 			if (wait_pid_result == pid) {
 				int exit_code = WEXITSTATUS(exit_status);

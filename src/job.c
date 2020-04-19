@@ -250,7 +250,7 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 			child_process_start_job(pipeline_get_task(pipeline, 0), envp);
 #endif
 		}
-		print_debug_message("RUNNING: %s", pipeline->full_command);
+		print_debug_message("RUNNING: [%d] %s", pid, pipeline->full_command);
 		JOB *job = malloc(sizeof(JOB));
 		/* TODO handle malloc error */
 		if (job == NULL) return;
@@ -263,7 +263,6 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		} else {
 			job_table_insert(job);
 			int kill_result = kill(pid, SIGTTIN);
-			printf("kill result: %d\n", kill_result);
 			if (kill_result < 0) {
 				perror("kill");
 			}
