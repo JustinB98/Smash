@@ -25,14 +25,14 @@ int wait_for_process(JOB *job, sigset_t *oset, void (*onStop)(JOB *)) {
 wait_for_process_skip_suspend:
 		if (sigstop_flag) {
 			print_debug_message("Received SIGSTOP signal while waiting for foreground process");
-			killpg(pid, SIGSTOP);
+			kill(-pid, SIGSTOP);
 			if (onStop) onStop(job);
 			sigstop_flag = 0;
 			return -1;
 		}
 		if (sigint_flag) {
 			print_debug_message("Received SIGINT signal while waiting for foreground process");
-			killpg(pid, SIGKILL);
+			kill(-pid, SIGKILL);
 			puts("");
 			sigint_flag = 0;
 		}
