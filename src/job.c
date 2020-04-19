@@ -84,6 +84,10 @@ static void fill_argv(WORD_LIST *list, size_t n_words, char **argv) {
 }
 
 static void start_exec(TASK *task){
+	int smash_command = execute_smash_command(task);
+	if (smash_command != 0) {
+		exit(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	}
 	char *argv[task->n_words + 1];
 	fill_argv(task->word_list, task->n_words, argv);
 	if (execvp(argv[0], argv) < 0) {
@@ -122,10 +126,6 @@ static pid_t exe_command(TASK *task, int ifd, int ofd) {
 		dup2(ifd, STDIN_FILENO);
 		dup2(ofd, STDOUT_FILENO);
 		dup2(error_fd, STDERR_FILENO);
-		int smash_command = execute_smash_command(task);
-		if (smash_command != 0) {
-			exit(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-		}
 		/* Doesn't return */
 		start_exec(task);
 	} else if (cpid < 0) {
