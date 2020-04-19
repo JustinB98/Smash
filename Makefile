@@ -66,7 +66,13 @@ run_reg_tests:
 	@$(call run_test_directory,$(ALL_REG_TESTS))
 	@printf "\n\n================= FINISHED REGULAR TESTS =================\n"
 
-tests: clean all run_reg_tests
+tests:
+	@echo "Compiling smash..."
+	@$(MAKE) clean all -s
+	$(MAKE) run_reg_tests
+	@echo "Compiling smash with -DEXTRA_CREDIT"
+	@$(MAKE) clean ec -s
+	$(MAKE) run_ec_tests
 
 $(BLDD):
 	mkdir -p $@
