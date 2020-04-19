@@ -29,6 +29,21 @@ test_name="Echo Test Stress Test"
 cmp test_file static_file
 $assert_success
 
+test_name="cd Test 1"
+./smash <(echo cd ..; echo pwd) > test_file
+cmp test_file <(cd ..; pwd)
+$assert_success
+
+test_name="cd Test 2"
+./smash <(echo cd /tmp; echo ls -al; echo pwd) > test_file
+cmp test_file <(cd /tmp; ls -al; pwd)
+$assert_success
+
+test_name="cd Test 3 (No arg)"
+./smash <(echo cd ; echo ls -al ; echo pwd) > test_file
+cmp test_file <(cd ; ls -al; pwd)
+$assert_success
+
 printf "==================== TEST02.SH END ====================\n"
 test_type="test02.sh"
 rm test_file
