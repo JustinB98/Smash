@@ -34,13 +34,13 @@ void task_print_all_args(TASK *task) {
 	/* Skip command and go to arg part of list */
 	WORD_LIST *current = task->word_list->next;
 	int words_printed = 0;
-	size_t n_words = task->n_words;
+	size_t n_words = task->n_words - 1;
 	while (current) {
 		printf("%s", current->word);
+		++words_printed;
 		if (words_printed < n_words) {
 			printf(" ");
 		}
-		++words_printed;
 		current = current->next;
 	}
 	print_debug_message("Printed %d for echo command", words_printed);
