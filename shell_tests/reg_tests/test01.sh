@@ -29,6 +29,11 @@ error_code=255
 ./smash < <(echo exit -1) > /dev/null 2>&1
 $assert_exit_code
 
+test_name="Exit code Test 5"
+error_code=127
+./smash < <(echo unknown command ; echo exit) >/dev/null 2>&1
+$assert_exit_code
+
 printf "==================== TEST01.SH END ====================\n"
 test_type="test01.sh"
 . shell_tests/finish.sh
