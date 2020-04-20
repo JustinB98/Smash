@@ -34,6 +34,43 @@ error_code=127
 ./smash < <(echo unknown command ; echo exit) >/dev/null 2>&1
 $assert_exit_code
 
+test_name="Non GNU Echo Test"
+./smash <(echo "echo --help") > test_file 2> /dev/null
+cmp test_file <(echo "--help")
+$assert_success
+
+test_name="Echo Test One Word"
+./smash <(echo "echo hello") > test_file 2> /dev/null
+cmp test_file <(echo "hello")
+$assert_success
+
+test_name="Echo Test Multiple Words"
+./smash <(echo "echo very long echo test") > test_file 2> /dev/null
+cmp test_file <(echo "very long echo test")
+$assert_success
+
+python -c "print('echo test sentence' * 100)" > static_file
+test_name="Echo Test Stress Test"
+./smash <(printf "echo " ; cat static_file) > test_file 2> /dev/null
+cmp test_file static_file
+$assert_success
+
+test_name="cd Test 1"
+./smash <(echo cd ..; echo pwd) > test_file
+cmp test_file <(cd ..; pwd)
+$assert_success
+
+test_name="cd Test 2"
+./smash <(echo cd /tmp; echo ls -al; echo pwd) > test_file
+cmp test_file <(cd /tmp; ls -al; pwd)
+$assert_success
+
+test_name="cd Test 3 (No arg)"
+./smash <(echo cd ; echo ls -al ; echo pwd) > test_file
+cmp test_file <(cd ; ls -al; pwd)
+$assert_success
+
 printf "==================== TEST01.SH END ====================\n"
 test_type="test01.sh"
+rm test_file
 . shell_tests/finish.sh
