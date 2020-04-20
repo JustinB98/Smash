@@ -20,7 +20,7 @@ echo *.badfileextension > actual_stdout_file
 cmp actual_stdout_file stdout_file
 $assert_success
 
-
 printf "==================== TEST06.SH END ====================\n"
+rm actual_stdout_file stdout_file
 test_type="test06.sh"
 . shell_tests/finish.sh
