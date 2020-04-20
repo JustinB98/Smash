@@ -35,7 +35,7 @@ int job_table_insert(JOB *job) {
 }
 
 void job_table_remove(JOB *job) {
-	/* TODO what if job is NULL */
+	if (job == NULL) return;
 	print_debug_message("Removing job %d (pid=%d) \'%s\' from the job table",
 			job->jobid, job->pid, job->pipeline->full_command);
 	hashtable_remove(job_id_table, job->jobid, NULL);
@@ -56,6 +56,10 @@ JOB *job_table_find(int jobid) {
 
 static JOB *job_table_change_status_of_job(pid_t pid, int status) {
 	JOB *job = hashtable_find(pid_table, pid);
+	if (job == NULL) {
+		print_debug_message("We've reaped a child that wasn't ours?? %d", pid);
+		return NULL;
+	}
 	print_debug_message("[%d] %d %s status %s -> %s",
 			job->jobid, pid,
 			job->pipeline->full_command,
@@ -67,7 +71,9 @@ static JOB *job_table_change_status_of_job(pid_t pid, int status) {
 
 static void job_table_mark_as_finished(pid_t pid, int status, int exit_code) {
 	JOB *job = job_table_change_status_of_job(pid, status);
-	job->exit_code = exit_code;
+	if (job != NULL) {
+		job->exit_code = exit_code;
+	}
 }
 
 void job_table_mark_as_done(pid_t pid, int exit_code) {
