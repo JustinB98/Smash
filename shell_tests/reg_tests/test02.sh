@@ -8,40 +8,19 @@ assert_fail=". shell_tests/assert_unsuccessful_exit.sh"
 
 echo "============ TEST02.SH START ==============="
 
-test_name="Non GNU Echo Test"
-./smash <(echo "echo --help") > test_file 2> /dev/null
-cmp test_file <(echo "--help")
+test_name="ls Test 1"
+./smash <(echo ls) > test_file
+cmp test_file <(ls)
 $assert_success
 
-test_name="Echo Test One Word"
-./smash <(echo "echo hello") > test_file 2> /dev/null
-cmp test_file <(echo "hello")
+test_name="ls Test 2"
+./smash <(echo ls /tmp -al) > test_file
+cmp test_file <(ls /tmp -al)
 $assert_success
 
-test_name="Echo Test Multiple Words"
-./smash <(echo "echo very long echo test") > test_file 2> /dev/null
-cmp test_file <(echo "very long echo test")
-$assert_success
-
-python -c "print('echo test sentence' * 100)" > static_file
-test_name="Echo Test Stress Test"
-./smash <(printf "echo " ; cat static_file) > test_file 2> /dev/null
-cmp test_file static_file
-$assert_success
-
-test_name="cd Test 1"
-./smash <(echo cd ..; echo pwd) > test_file
-cmp test_file <(cd ..; pwd)
-$assert_success
-
-test_name="cd Test 2"
-./smash <(echo cd /tmp; echo ls -al; echo pwd) > test_file
-cmp test_file <(cd /tmp; ls -al; pwd)
-$assert_success
-
-test_name="cd Test 3 (No arg)"
-./smash <(echo cd ; echo ls -al ; echo pwd) > test_file
-cmp test_file <(cd ; ls -al; pwd)
+test_name="wc Test"
+./smash <(echo wc ./smash) > test_file
+cmp test_file <(wc ./smash)
 $assert_success
 
 printf "==================== TEST02.SH END ====================\n"
