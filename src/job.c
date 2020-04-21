@@ -242,7 +242,13 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 			sigprocmask(SIG_SETMASK, &oset, NULL);
 			return;
 		} else if (pid == 0) {
-			pid_t ret = setsid();
+			install_signal_handler(SIGTTIN, SIG_DFL);
+			install_signal_handler(SIGTTOU, SIG_DFL);
+			pid = getpid();
+			int ret = setpgid(pid, pid);
+			if (pipeline->fg) {
+				// tcsetpgrp(STDIN_FILENO, pid);
+			}
 			if (ret < 0) {
 				perror("Could not set pgid of child process");
 				abort();
@@ -254,6 +260,7 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 			child_process_start_job(pipeline_get_task(pipeline, 0), envp);
 #endif
 		}
+		setpgid(pid, pid);
 		print_debug_message("RUNNING: [%d] %s", pid, pipeline->full_command);
 		JOB *job = malloc(sizeof(JOB));
 		/* TODO handle malloc error */
@@ -262,14 +269,12 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		job->status = 0;
 		job->pid = pid;
 		if (pipeline->fg) {
+			tcsetpgrp(STDIN_FILENO, pid);
 			int result = wait_for_process(job, &oset, print_new_background_job);
+			tcsetpgrp(STDIN_FILENO, getpid());
 			if (result == 0) free_job(job);
 		} else {
 			job_table_insert(job);
-			int kill_result = kill(pid, SIGTTIN);
-			if (kill_result < 0) {
-				perror("kill");
-			}
 		}
 		sigprocmask(SIG_SETMASK, &oset, NULL);
 		sigstop_flag = 0;

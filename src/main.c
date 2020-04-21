@@ -51,6 +51,9 @@ int main(int argc, char *argv[], char *env[]) {
 	FILE *file_input = has_file_input() ? open_file_input() : stdin;
 	int exit_code = 0;
 	int exit_smash = 0;
+	setsid();
+	setpgid(getpid(), getpid());
+	tcsetpgrp(STDIN_FILENO, getpid());
 	while (1) {
 		if (file_input == stdin) {
 			printf("smash> ");
