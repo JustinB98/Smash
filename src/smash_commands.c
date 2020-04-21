@@ -114,6 +114,7 @@ static int smash_fg(TASK *task) {
 	sigset_t set, oset;
 	sigfillset(&set);
 	sigprocmask(SIG_SETMASK, &set, &oset);
+	tcsetpgrp(STDIN_FILENO, job->pid);
 	kill(-job->pid, SIGCONT);
 	int result = wait_for_process(job, &oset, NULL);
 	sigprocmask(SIG_SETMASK, &oset, NULL);
