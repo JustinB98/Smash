@@ -90,6 +90,9 @@ static void start_exec(TASK *task){
 	}
 	char *argv[task->n_words + 1];
 	fill_argv(task->word_list, task->n_words, argv);
+	sigset_t set;
+	sigemptyset(&set);
+	sigprocmask(SIG_SETMASK, &set, NULL);
 	if (execvp(argv[0], argv) < 0) {
 		fprintf(stderr, "Could not find program: %s\n", argv[0]);
 		exit(127);

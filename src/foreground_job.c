@@ -32,7 +32,7 @@ wait_for_process_skip_suspend:
 		}
 		if (sigint_flag) {
 			print_debug_message("Received SIGINT signal while waiting for foreground process");
-			kill(-pid, SIGKILL);
+			kill(-pid, SIGINT);
 			puts("");
 			sigint_flag = 0;
 		}
