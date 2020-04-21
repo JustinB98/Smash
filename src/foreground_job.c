@@ -52,6 +52,7 @@ wait_for_process_skip_suspend:
 					print_debug_message("Foreground process is stopped, putting in background");
 					if (onStop) onStop(job);
 					tcsetpgrp(STDIN_FILENO, get_smash_pid());
+					set_exit_code(128 + WSTOPSIG(exit_status));
 					return -1;
 				}
 				int exit_code;

@@ -114,6 +114,7 @@ static int smash_fg(TASK *task) {
 	sigset_t set, oset;
 	sigfillset(&set);
 	sigprocmask(SIG_SETMASK, &set, &oset);
+	puts(job->pipeline->full_command);
 	tcsetpgrp(STDIN_FILENO, job->pid);
 	kill(-job->pid, SIGCONT);
 	int result = wait_for_process(job, &oset, NULL);
@@ -171,15 +172,23 @@ static int smash_echo(TASK *task) {
 
 int execute_smash_command(TASK *task) {
 	char *cmd = task_get_command(task);
-	if (!strcmp(cmd, "cd")) return smash_cd(task);
-	else if (!strcmp(cmd, "pwd")) return smash_pwd(task);
-	else if (!strcmp(cmd, "jobs")) return smash_jobs(task);
-	else if (!strcmp(cmd, "fg")) return smash_fg(task);
-	else if (!strcmp(cmd, "bg")) return smash_bg(task);
-	else if (!strcmp(cmd, "kill")) return smash_kill(task);
-	else if (!strcmp(cmd, "echo")) return smash_echo(task);
-	else if (!strcmp(cmd, "exit")) return 1; /* Make sure it's a no op during a pipeline */
-	return 0;
+	int result = 0;
+	int fg_op = 0;
+	if (!strcmp(cmd, "cd")) result = smash_cd(task);
+	else if (!strcmp(cmd, "pwd")) result = smash_pwd(task);
+	else if (!strcmp(cmd, "jobs")) result = smash_jobs(task);
+	else if (!strcmp(cmd, "fg")) { fg_op = 1; result = smash_fg(task); }
+	else if (!strcmp(cmd, "bg")) result = smash_bg(task);
+	else if (!strcmp(cmd, "kill")) result = smash_kill(task);
+	else if (!strcmp(cmd, "echo")) result = smash_echo(task);
+	else if (!strcmp(cmd, "exit")) result = 1; /* Make sure it's a no op during a pipeline */
+	if (result == 0) return 0;
+	if (result < 0) {
+		set_exit_code_failure();
+	} else if (!fg_op) {
+		set_exit_code_success();
+	}
+	return 1;
 }
 
 int should_exit(TASK *task, int *exit_code) {

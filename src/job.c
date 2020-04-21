@@ -86,7 +86,7 @@ static void fill_argv(WORD_LIST *list, size_t n_words, char **argv) {
 static void start_exec(TASK *task){
 	int smash_command = execute_smash_command(task);
 	if (smash_command != 0) {
-		exit(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+		exit(get_exit_code());
 	}
 	char *argv[task->n_words + 1];
 	fill_argv(task->word_list, task->n_words, argv);
@@ -229,7 +229,7 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 			smash_command = execute_smash_command(pipeline_get_task(pipeline, 0));
 			if (smash_command != 0) {
 				free_pipeline(pipeline);
-				set_exit_code(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+				// set_exit_code(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 				return;
 			}
 		}
