@@ -28,7 +28,7 @@ int wait_for_process(JOB *job, sigset_t *oset, void (*onStop)(JOB *)) {
 wait_for_process_skip_suspend:
 		if (sigstop_flag) {
 			print_debug_message("Received SIGSTOP signal while waiting for foreground process");
-			kill(-pid, SIGSTOP);
+			kill(-pid, SIGTSTP);
 			if (onStop) onStop(job);
 			sigstop_flag = 0;
 			tcsetpgrp(STDIN_FILENO, get_smash_pid());
@@ -44,10 +44,16 @@ wait_for_process_skip_suspend:
 		if (sigchld_flag) {
 			print_debug_message("Received SIGCHLD signal while waiting for foreground process");
 			int exit_status;
-			pid_t wait_pid_result = waitpid(pid, &exit_status, WNOHANG);
+			pid_t wait_pid_result = waitpid(pid, &exit_status, WNOHANG | WUNTRACED);
 			print_debug_message("Tried to reap foreground process. Result: %d", wait_pid_result);
 			child_reaper();
 			if (wait_pid_result == pid) {
+				if (WIFSTOPPED(exit_status)) {
+					print_debug_message("Foreground process is stopped, putting in background");
+					if (onStop) onStop(job);
+					tcsetpgrp(STDIN_FILENO, get_smash_pid());
+					return -1;
+				}
 				int exit_code;
 				if (WIFSIGNALED(exit_status)) {
 					exit_code = 128 + WTERMSIG(exit_status);

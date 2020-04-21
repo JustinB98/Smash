@@ -218,6 +218,7 @@ static void child_process_start_pipeline(PIPELINE *pipeline, char *envp[]) {
 
 void print_new_background_job(JOB *job) {
 	int jobid = job_table_insert(job);
+	job_table_change_status(job->pid, STOPPED);
 	printf("[%d] Stopped %s\n", jobid, job->pipeline->full_command);
 }
 
@@ -244,6 +245,8 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		} else if (pid == 0) {
 			install_signal_handler(SIGTTIN, SIG_DFL);
 			install_signal_handler(SIGTTOU, SIG_DFL);
+			install_signal_handler(SIGINT, SIG_DFL);
+			install_signal_handler(SIGTSTP, SIG_DFL);
 			pid = getpid();
 			int ret = setpgid(pid, pid);
 			if (pipeline->fg) {
