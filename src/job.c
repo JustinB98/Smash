@@ -239,6 +239,7 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		pid_t pid = fork();
 		if (pid < 0) {
 			perror("Could not spawn process");
+			sigprocmask(SIG_SETMASK, &oset, NULL);
 			return;
 		} else if (pid == 0) {
 			pid_t ret = setsid();
