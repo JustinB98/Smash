@@ -57,7 +57,7 @@ JOB *job_table_find(int jobid) {
 static JOB *job_table_change_status_of_job(pid_t pid, int status) {
 	JOB *job = hashtable_find(pid_table, pid);
 	if (job == NULL) {
-		print_debug_message("We've reaped a child that wasn't ours?? %d", pid);
+		print_debug_message("We've reaped a child that wasn't in the job table [%d]", pid);
 		return NULL;
 	}
 	print_debug_message("[%d] %d %s status %s -> %s",
