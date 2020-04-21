@@ -269,9 +269,7 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		job->status = 0;
 		job->pid = pid;
 		if (pipeline->fg) {
-			tcsetpgrp(STDIN_FILENO, pid);
 			int result = wait_for_process(job, &oset, print_new_background_job);
-			tcsetpgrp(STDIN_FILENO, getpid());
 			if (result == 0) free_job(job);
 		} else {
 			job_table_insert(job);

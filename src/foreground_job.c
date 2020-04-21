@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include "task.h"
 #include "pipeline.h"
@@ -11,9 +12,11 @@
 #include "signal_handlers.h"
 #include "exit_code.h"
 #include "debug.h"
+#include "metadata.h"
 
 int wait_for_process(JOB *job, sigset_t *oset, void (*onStop)(JOB *)) {
 	pid_t pid = job->pid;
+	tcsetpgrp(STDIN_FILENO, pid);
 	sigint_flag = 0;
 	sigstop_flag = 0;
 	while (1) {
@@ -28,6 +31,7 @@ wait_for_process_skip_suspend:
 			kill(-pid, SIGSTOP);
 			if (onStop) onStop(job);
 			sigstop_flag = 0;
+			tcsetpgrp(STDIN_FILENO, get_smash_pid());
 			return -1;
 		}
 		if (sigint_flag) {
@@ -35,6 +39,7 @@ wait_for_process_skip_suspend:
 			kill(-pid, SIGINT);
 			puts("");
 			sigint_flag = 0;
+			/* We still have to wait for the child process to finish, so don't return */
 		}
 		if (sigchld_flag) {
 			print_debug_message("Received SIGCHLD signal while waiting for foreground process");
@@ -53,6 +58,7 @@ wait_for_process_skip_suspend:
 						job->pipeline->full_command,
 						exit_code);
 				set_exit_code(exit_code);
+				tcsetpgrp(STDIN_FILENO, get_smash_pid());
 				return 0;
 			}
 		}
