@@ -43,7 +43,12 @@ wait_for_process_skip_suspend:
 			print_debug_message("Tried to reap foreground process. Result: %d", wait_pid_result);
 			child_reaper();
 			if (wait_pid_result == pid) {
-				int exit_code = WEXITSTATUS(exit_status);
+				int exit_code;
+				if (WIFSIGNALED(exit_status)) {
+					exit_code = 128 + WTERMSIG(exit_status);
+				} else {
+					exit_code = WEXITSTATUS(exit_status);
+				}
 				print_debug_message("ENDED FOREGROUND JOB: %s (ret=%d)",
 						job->pipeline->full_command,
 						exit_code);
