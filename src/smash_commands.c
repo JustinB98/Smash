@@ -28,6 +28,12 @@
 #define print_smash_error_with_usage(cmd, usage) print_smash_error(cmd, usage)
 #define print_smash_error_no_job_control(cmd) print_smash_error(cmd, "no job control")
 
+#define TRY_COMMAND_AND_HANDLE_ERROR(to_run, func_name, op_name, after) \
+	if ((to_run) < 0) { \
+		fprintf(stderr, "%s failed... aborting %s: %s\n", (func_name), (op_name), strerror(errno)); \
+		after; \
+	}
+
 static int smash_error_check(TASK *task) {
 	if (task->n_words > 2) { 
 		print_smash_error_too_many_args("exit");
@@ -45,10 +51,13 @@ static int smash_cd(TASK *task) {
 		path = task_get_word(task, 1);
 	} else if (task->n_words == 1) {
 		path = getenv("HOME");
+		if (path == NULL) {
+			fprintf(stderr, "No home path found\n");
+			return -1;
+		}
 	}
 	int result = chdir(path);
 	if (result < 0) {
-		fprintf(stderr, "Could not find %s\n", path);
 		print_smash_error_with_errno_and_extra("cd", path);
 		return -1;
 	}
@@ -112,20 +121,26 @@ static void change_job_status_to_stopped(JOB *job) {
 }
 
 static int smash_fg(TASK *task) {
+	int result = -1;
 	JOB *job = job_control_prereq(task);
-	if (job == NULL) return -1;
-	else if (get_smash_pid() != getpid()) {
+	if (get_smash_pid() != getpid()) {
 		print_smash_error_no_job_control("fg");
+		return -1;
+	} else if (job == NULL) {
+		return -1;
+	} else if (job->status == DONE || job->status == ABORTED) {
+		print_smash_error("fg", "job has been terminated");
 		return -1;
 	}
 	sigset_t set, oset;
-	sigfillset(&set);
-	sigprocmask(SIG_SETMASK, &set, &oset);
+	TRY_COMMAND_AND_HANDLE_ERROR(sigfillset(&set), "sigfillset", "fg", return -1);
+	TRY_COMMAND_AND_HANDLE_ERROR(sigprocmask(SIG_SETMASK, &set, &oset), "sigfillset", "fg", return -1);
 	puts(job->pipeline->full_command);
-	tcsetpgrp(STDIN_FILENO, job->pid);
-	kill(-job->pid, SIGCONT);
-	int result = wait_for_process(job, &oset, change_job_status_to_stopped);
-	sigprocmask(SIG_SETMASK, &oset, NULL);
+	TRY_COMMAND_AND_HANDLE_ERROR(tcsetpgrp(STDIN_FILENO, job->pid), "tcsetpgrp", "fg", goto smash_fg_finish);
+	TRY_COMMAND_AND_HANDLE_ERROR(kill(-job->pid, SIGCONT), "kill", "fg", goto smash_fg_finish);
+	result = wait_for_process(job, &oset, change_job_status_to_stopped);
+smash_fg_finish:
+	TRY_COMMAND_AND_HANDLE_ERROR(sigprocmask(SIG_SETMASK, &oset, NULL), "sigprocmask", "fg", return -1);
 	if (result == 0) {
 		job_table_remove(job);
 	}
@@ -134,12 +149,20 @@ static int smash_fg(TASK *task) {
 
 static int smash_bg(TASK *task) {
 	JOB *job = job_control_prereq(task);
-	if (job == NULL) return -1;
 	if (get_smash_pid() != getpid()) {
 		print_smash_error_no_job_control("bg");
 		return -1;
+	} else if (job == NULL) {
+		return -1;
+	} else if (job->status == DONE || job->status == ABORTED) {
+		print_smash_error("bg", "job has been terminated");
+		return -1;
+	} else if (job->status == RUNNING) {
+		print_smash_error("bg", "job is already running in the background");
+		/* Bash doesn't mark this as an error */
+		return 1;
 	}
-	kill(-job->pid, SIGCONT);
+	TRY_COMMAND_AND_HANDLE_ERROR(kill(-job->pid, SIGCONT), "kill", "bg", return -1);
 	return 1;
 }
 
@@ -164,7 +187,7 @@ static int smash_kill(TASK *task) {
 	char *jobstr_id = task_get_word(task, 2);
 	JOB *job = get_job_from_table(jobstr_id, cmd);
 	if (job == NULL) return -1;
-	kill(-job->pid, signum);
+	TRY_COMMAND_AND_HANDLE_ERROR(kill(-job->pid, signum), "kill", "kill", return -1);
 	return 1;
 }
 
@@ -172,8 +195,7 @@ static int smash_echo(TASK *task) {
 	if (get_smash_pid() == getpid()) return 0;
 	print_debug_message("Executing smash echo");
 	task_print_all_args(task);
-	puts("");
-	fflush(stdout);
+	printf("\n");
 	return 1;
 }
 
