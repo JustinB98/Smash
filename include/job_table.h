@@ -11,7 +11,7 @@ void job_table_remove_by_pid(pid_t pid);
 
 JOB *job_table_find(int jobid);
 
-void job_table_change_status(pid_t pid, int status);
+void job_table_change_status(pid_t pid, JOB_STATUS status);
 
 void job_table_mark_as_done(pid_t pid, int exit_code);
 

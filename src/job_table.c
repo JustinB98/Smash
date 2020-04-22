@@ -54,7 +54,7 @@ JOB *job_table_find(int jobid) {
 	return hashtable_find(job_id_table, jobid);
 }
 
-static JOB *job_table_change_status_of_job(pid_t pid, int status) {
+static JOB *job_table_change_status_of_job(pid_t pid, JOB_STATUS status) {
 	JOB *job = hashtable_find(pid_table, pid);
 	if (job == NULL) {
 		print_debug_message("We've reaped a child that wasn't in the job table [%d]", pid);
@@ -66,10 +66,11 @@ static JOB *job_table_change_status_of_job(pid_t pid, int status) {
 			job_status_names[job->status],
 			job_status_names[status]);
 	job->status = status;
+	job->status_updated = 1;
 	return job;
 }
 
-static void job_table_mark_as_finished(pid_t pid, int status, int exit_code) {
+static void job_table_mark_as_finished(pid_t pid, JOB_STATUS status, int exit_code) {
 	JOB *job = job_table_change_status_of_job(pid, status);
 	if (job != NULL) {
 		job->exit_code = exit_code;
@@ -84,7 +85,7 @@ void job_table_mark_as_aborted(pid_t pid, int exit_code) {
 	job_table_mark_as_finished(pid, ABORTED, exit_code);
 }
 
-void job_table_change_status(pid_t pid, int status) {
+void job_table_change_status(pid_t pid, JOB_STATUS status) {
 	job_table_change_status_of_job(pid, status);
 }
 
@@ -99,13 +100,17 @@ static void for_each_job(void (*job_consumer)(JOB *)) {
 }
 
 static void print_and_remove_finished_job(JOB *job) {
-	if (job->status != DONE && job->status != ABORTED) return;
-	printf("[%d] %d %s \'%s\' -------- Exit code: %d\n",
+	if (!job->status_updated) return;
+	job->status_updated = 0;
+	printf("[%d] %d %s \'%s\'",
 			job->jobid, job->pid,
 			job_status_names[job->status],
-			job->pipeline->full_command,
-			job->exit_code);
+			job->pipeline->full_command);
+	if (job->status != DONE && job->status != ABORTED) goto print_and_remove_finished_job_finish;
+	printf(" -------- Exit code: %d", job->exit_code);
 	job_table_remove(job);
+print_and_remove_finished_job_finish:
+	printf("\n");
 }
 
 static void print_single_job(JOB *job) {

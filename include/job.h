@@ -14,6 +14,7 @@ typedef struct job {
 	JOB_STATUS status;
 	pid_t pid;
 	int exit_code;
+	int status_updated;
 } JOB;
 
 void start_pipeline(PIPELINE *pipeline, char *envp[]);
