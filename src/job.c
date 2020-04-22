@@ -29,8 +29,6 @@
 		exit(EXIT_FAILURE); \
 	}
 
-
-
 void free_job(JOB *job) {
 	free_pipeline(job->pipeline);
 	free(job);
@@ -107,6 +105,7 @@ static void start_exec(TASK *task){
 	sigprocmask(SIG_SETMASK, &set, NULL);
 	if (execvp(argv[0], argv) < 0) {
 		fprintf(stderr, "Could not find program: %s\n", argv[0]);
+		/* Standard terminal error for commands not found */
 		exit(127);
 	}
 }
@@ -292,7 +291,10 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		memset(&job->starting_usage, 0, sizeof(struct rusage));
 	}
 #endif
-	setpgid(pid, pid);
+	if (setpgid(pid, pid) < 0) {
+		/* Possible that child cannot set it either, in which case the child will abort itself */
+		perror("Could not set forked child's pgid");
+	}
 	print_debug_message("RUNNING: [%d] %s", pid, pipeline->full_command);
 	job->status_updated = 0;
 	/* TODO handle malloc error */
@@ -308,7 +310,7 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		printf("[%d] %d STARTED \'%s\'\n", jobid, pid, pipeline->full_command);
 	}
 	if (sigprocmask(SIG_SETMASK, &oset, NULL) < 0) {
-		perror("sigprocmask: Program will not behave normally");
+		perror("sigprocmask failed: Program will not behave normally");
 	}
 	sigstop_flag = 0;
 }
