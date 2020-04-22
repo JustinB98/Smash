@@ -24,6 +24,10 @@ test_name="More than 1 input file"
 ./smash <(echo ls) <(echo bad_file) > /dev/null 2>&1
 $assert_fail
 
+test_name="Opening File That Doesn't Exist"
+./smash /path/to/invalid/file/that/will/never/work > /dev/null 2>&1
+$assert_fail
+
 test_name="Help Flag Test"
 ./smash -h > /dev/null 2>&1
 $assert_success
