@@ -1,5 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
+#ifdef EXTRA_CREDIT
+#include <sys/resource.h>
+#endif
 
 #include "linked_list.h"
 #include "hashtable.h"
@@ -70,19 +73,20 @@ static JOB *job_table_change_status_of_job(pid_t pid, JOB_STATUS status) {
 	return job;
 }
 
-static void job_table_mark_as_finished(pid_t pid, JOB_STATUS status, int exit_code) {
+static JOB *job_table_mark_as_finished(pid_t pid, JOB_STATUS status, int exit_code) {
 	JOB *job = job_table_change_status_of_job(pid, status);
 	if (job != NULL) {
 		job->exit_code = exit_code;
 	}
+	return job;
 }
 
-void job_table_mark_as_done(pid_t pid, int exit_code) {
-	job_table_mark_as_finished(pid, DONE, exit_code);
+JOB *job_table_mark_as_done(pid_t pid, int exit_code) {
+	return job_table_mark_as_finished(pid, DONE, exit_code);
 }
 
-void job_table_mark_as_aborted(pid_t pid, int exit_code) {
-	job_table_mark_as_finished(pid, ABORTED, exit_code);
+JOB *job_table_mark_as_aborted(pid_t pid, int exit_code) {
+	return job_table_mark_as_finished(pid, ABORTED, exit_code);
 }
 
 void job_table_change_status(pid_t pid, JOB_STATUS status) {
