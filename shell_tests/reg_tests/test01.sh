@@ -49,6 +49,21 @@ test_name="Echo Test Multiple Words"
 cmp test_file <(echo "very long echo test")
 $assert_success
 
+test_name="Path Env Var Test"
+./smash <(echo "echo \$PATH") > test_file
+cmp test_file <(echo "$PATH")
+$assert_success
+
+test_name="Home Env Var Test"
+./smash <(echo "echo \$HOME") > test_file
+cmp test_file <(echo "$HOME")
+$assert_success
+
+test_name="Env Var Doesn't Exit Test"
+./smash <(echo "echo \$WEIRD_ENVIRONMENT_VARIABLE") > test_file
+cmp test_file <(echo "$WEIRD_ENVIRONMENT_VARIABLE")
+$assert_success
+
 python -c "print('echo test sentence' * 100)" > static_file
 test_name="Echo Test Stress Test"
 ./smash <(printf "echo " ; cat static_file) > test_file 2> /dev/null
@@ -61,8 +76,8 @@ cmp test_file <(cd ..; pwd)
 $assert_success
 
 test_name="cd Test 2"
-./smash <(echo cd /tmp; echo ls -al; echo pwd) > test_file
-cmp test_file <(cd /tmp; ls -al; pwd)
+./smash <(echo cd /tmp; echo pwd) > test_file
+cmp test_file <(cd /tmp ; pwd)
 $assert_success
 
 test_name="cd Test 3 (No arg)"
@@ -72,5 +87,5 @@ $assert_success
 
 printf "==================== TEST01.SH END ====================\n"
 test_type="test01.sh"
-rm test_file
+rm test_file static_file
 . shell_tests/finish.sh
