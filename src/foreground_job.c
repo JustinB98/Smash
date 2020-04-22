@@ -17,9 +17,22 @@
 #include "debug.h"
 #include "metadata.h"
 
+#define SAFE_KILL(pid, sig) \
+	if (kill((pid), (sig)) < 0) { \
+		perror("Could not send signal to foreground process"); \
+	}
+
+static void give_terminal_back_to_smash() {
+	if (tcsetpgrp(STDIN_FILENO, get_smash_pid()) < 0) {
+		perror("Could not put smash back into foreground of terminal");
+	}
+}
+
 int wait_for_process(JOB *job, sigset_t *oset, void (*onStop)(JOB *)) {
 	pid_t pid = job->pid;
-	tcsetpgrp(STDIN_FILENO, pid);
+	if (tcsetpgrp(STDIN_FILENO, pid) < 0) {
+		perror("Could not put job into foreground on terminal");
+	}
 	sigint_flag = 0;
 	sigstop_flag = 0;
 	while (1) {
@@ -31,15 +44,15 @@ int wait_for_process(JOB *job, sigset_t *oset, void (*onStop)(JOB *)) {
 wait_for_process_skip_suspend:
 		if (sigstop_flag) {
 			print_debug_message("Received SIGSTOP signal while waiting for foreground process");
-			kill(-pid, SIGTSTP);
+			SAFE_KILL(-pid, SIGTSTP);
 			if (onStop) onStop(job);
 			sigstop_flag = 0;
-			tcsetpgrp(STDIN_FILENO, get_smash_pid());
+			give_terminal_back_to_smash();
 			return -1;
 		}
 		if (sigint_flag) {
 			print_debug_message("Received SIGINT signal while waiting for foreground process");
-			kill(-pid, SIGINT);
+			SAFE_KILL(-pid, SIGINT);
 			puts("");
 			sigint_flag = 0;
 			/* We still have to wait for the child process to finish, so don't return */
@@ -68,7 +81,7 @@ wait_for_process_skip_suspend:
 						job->pipeline->full_command,
 						exit_code);
 				set_exit_code(exit_code);
-				tcsetpgrp(STDIN_FILENO, get_smash_pid());
+				give_terminal_back_to_smash();
 				return 0;
 			}
 		}
