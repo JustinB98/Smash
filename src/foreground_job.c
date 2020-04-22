@@ -23,14 +23,14 @@
 	}
 
 static void give_terminal_back_to_smash() {
-	if (tcsetpgrp(STDIN_FILENO, get_smash_pid()) < 0) {
+	if (is_interactive() && tcsetpgrp(STDIN_FILENO, get_smash_pid()) < 0) {
 		perror("Could not put smash back into foreground of terminal");
 	}
 }
 
 int wait_for_process(JOB *job, sigset_t *oset, void (*onStop)(JOB *)) {
 	pid_t pid = job->pid;
-	if (tcsetpgrp(STDIN_FILENO, pid) < 0) {
+	if (is_interactive() && tcsetpgrp(STDIN_FILENO, pid) < 0) {
 		perror("Could not put job into foreground on terminal");
 	}
 	sigint_flag = 0;
@@ -67,7 +67,7 @@ wait_for_process_skip_suspend:
 				if (WIFSTOPPED(exit_status)) {
 					print_debug_message("Foreground process is stopped, putting in background");
 					if (onStop) onStop(job);
-					tcsetpgrp(STDIN_FILENO, get_smash_pid());
+					give_terminal_back_to_smash();
 					set_exit_code(128 + WSTOPSIG(exit_status));
 					return -1;
 				}

@@ -136,7 +136,9 @@ static int smash_fg(TASK *task) {
 	TRY_COMMAND_AND_HANDLE_ERROR(sigfillset(&set), "sigfillset", "fg", return -1);
 	TRY_COMMAND_AND_HANDLE_ERROR(sigprocmask(SIG_SETMASK, &set, &oset), "sigfillset", "fg", return -1);
 	puts(job->pipeline->full_command);
-	TRY_COMMAND_AND_HANDLE_ERROR(tcsetpgrp(STDIN_FILENO, job->pid), "tcsetpgrp", "fg", goto smash_fg_finish);
+	if (is_interactive()) {
+		TRY_COMMAND_AND_HANDLE_ERROR(tcsetpgrp(STDIN_FILENO, job->pid), "tcsetpgrp", "fg", goto smash_fg_finish);
+	}
 	TRY_COMMAND_AND_HANDLE_ERROR(kill(-job->pid, SIGCONT), "kill", "fg", goto smash_fg_finish);
 	result = wait_for_process(job, &oset, change_job_status_to_stopped);
 smash_fg_finish:
