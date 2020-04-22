@@ -5,9 +5,9 @@
 #include <errno.h>
 #include <sys/wait.h>
 
-#include <sys/time.h>
-#include <sys/times.h>
+#ifdef EXTRA_CREDIT
 #include <sys/resource.h>
+#endif
 
 #include "task.h"
 #include "pipeline.h"
@@ -54,39 +54,15 @@ static void install_signal_handlers() {
 
 void signal_handlers_init() {
 	install_signal_handlers();
-	/* TODO anything else? */
-}
-
-static void print_usage(JOB *job) {
-#ifndef EXTRA_CREDIT
-	return;
-#else
-	struct timeval current;
-	gettimeofday(&current, NULL);
-	struct rusage use;
-	getrusage(RUSAGE_CHILDREN, &use);
-	struct timeval final_time;
-	struct timeval final_utime, final_stime;
-	timersub(&current, &job->starting_time, &final_time);
-	timersub(&use.ru_utime, &job->starting_usage.ru_utime, &final_utime);
-	timersub(&use.ru_stime, &job->starting_usage.ru_stime, &final_stime);
-
-	printf("REAL: %ld.%ld\tUSER: %ld.%ld\tSYS: %ld.%ld\n",
-			final_time.tv_sec, final_time.tv_usec,
-			final_utime.tv_sec, final_utime.tv_usec,
-			final_stime.tv_sec, final_stime.tv_usec
-			);
-#endif
+	/* Might be more to init later */
 }
 
 void update_child(pid_t rpid, int wstatus) {
 	print_debug_message("Reaped child with pid: %d", rpid);
 	if (WIFSIGNALED(wstatus)) {
-		JOB *job = job_table_mark_as_aborted(rpid, 128 + WTERMSIG(wstatus));
-		print_usage(job);
+		job_table_mark_as_aborted(rpid, 128 + WTERMSIG(wstatus));
 	} else if (WIFEXITED(wstatus) || WIFSIGNALED(wstatus)) {
-		JOB *job = job_table_mark_as_done(rpid, WEXITSTATUS(wstatus));
-		print_usage(job);
+		job_table_mark_as_done(rpid, WEXITSTATUS(wstatus));
 	} else if (WIFCONTINUED(wstatus)) {
 		job_table_change_status(rpid, RUNNING);
 	} else if (WIFSTOPPED(wstatus)) {
