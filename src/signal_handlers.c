@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 
 #include <sys/time.h>
+#include <sys/times.h>
 #include <sys/resource.h>
 
 #include "task.h"
@@ -56,45 +57,49 @@ void signal_handlers_init() {
 	/* TODO anything else? */
 }
 
-#if 0
-static void print_usage() {
-	struct rusage self_usage, child_usage;
-	int result = getrusage(RUSAGE_SELF, &self_usage);
-	if (result < 0) {
-		perror("self getrusage");
-		return;
-	}
-	result = getrusage(RUSAGE_CHILDREN, &child_usage);
-	if (result < 0) {
-		perror("child getrusage");
-		return;
-	}
-	printf("REAL=%lu.%lu USER=%lu.%lu SYSTEM=%lu.%lu\n",
-			self_usage.ru_utime.tv_sec,
-			self_usage.ru_utime.tv_usec,
-			child_usage.ru_utime.tv_sec,
-			child_usage.ru_utime.tv_usec,
-			child_usage.ru_stime.tv_sec,
-			child_usage.ru_stime.tv_usec);
-}
+static void print_usage(JOB *job) {
+#ifndef EXTRA_CREDIT
+	return;
+#else
+	struct timeval current;
+	gettimeofday(&current, NULL);
+	struct rusage use;
+	getrusage(RUSAGE_CHILDREN, &use);
+	struct timeval final_time;
+	struct timeval final_utime, final_stime;
+	timersub(&current, &job->starting_time, &final_time);
+	timersub(&use.ru_utime, &job->starting_usage.ru_utime, &final_utime);
+	timersub(&use.ru_stime, &job->starting_usage.ru_stime, &final_stime);
+
+	printf("REAL: %ld.%ld\tUSER: %ld.%ld\tSYS: %ld.%ld\n",
+			final_time.tv_sec, final_time.tv_usec,
+			final_utime.tv_sec, final_utime.tv_usec,
+			final_stime.tv_sec, final_stime.tv_usec
+			);
 #endif
+}
+
+void update_child(pid_t rpid, int wstatus) {
+	print_debug_message("Reaped child with pid: %d", rpid);
+	if (WIFSIGNALED(wstatus)) {
+		JOB *job = job_table_mark_as_aborted(rpid, 128 + WTERMSIG(wstatus));
+		print_usage(job);
+	} else if (WIFEXITED(wstatus) || WIFSIGNALED(wstatus)) {
+		JOB *job = job_table_mark_as_done(rpid, WEXITSTATUS(wstatus));
+		print_usage(job);
+	} else if (WIFCONTINUED(wstatus)) {
+		job_table_change_status(rpid, RUNNING);
+	} else if (WIFSTOPPED(wstatus)) {
+		job_table_change_status(rpid, STOPPED);
+	}
+
+}
 
 void reap_children() {
 	pid_t rpid;
 	int wstatus;
 	while ((rpid = waitpid(-1, &wstatus, WNOHANG | WUNTRACED | WCONTINUED)) > 0) {
-		print_debug_message("Reaped child with pid: %d", rpid);
-		if (WIFSIGNALED(wstatus)) {
-			// print_usage();
-			job_table_mark_as_aborted(rpid, 128 + WTERMSIG(wstatus));
-		} else if (WIFEXITED(wstatus) || WIFSIGNALED(wstatus)) {
-			// print_usage();
-			job_table_mark_as_done(rpid, WEXITSTATUS(wstatus));
-		} else if (WIFCONTINUED(wstatus)) {
-			job_table_change_status(rpid, RUNNING);
-		} else if (WIFSTOPPED(wstatus)) {
-			job_table_change_status(rpid, STOPPED);
-		}
+		update_child(rpid, wstatus);
 	}
 }
 
