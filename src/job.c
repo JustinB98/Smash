@@ -217,9 +217,9 @@ static void child_process_start_pipeline(PIPELINE *pipeline, char *envp[]) {
 #endif
 
 void print_new_background_job(JOB *job) {
-	int jobid = job_table_insert(job);
+	print_debug_message("Inserting foreground job into background");
+	job_table_insert(job);
 	job_table_change_status(job->pid, STOPPED);
-	printf("[%d] Stopped %s\n", jobid, job->pipeline->full_command);
 }
 
 void start_pipeline(PIPELINE *pipeline, char *envp[]) {
@@ -266,16 +266,18 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		setpgid(pid, pid);
 		print_debug_message("RUNNING: [%d] %s", pid, pipeline->full_command);
 		JOB *job = malloc(sizeof(JOB));
+		job->status_updated = 0;
 		/* TODO handle malloc error */
 		if (job == NULL) return;
 		job->pipeline = pipeline;
-		job->status = 0;
+		job->status = RUNNING;
 		job->pid = pid;
 		if (pipeline->fg) {
 			int result = wait_for_process(job, &oset, print_new_background_job);
 			if (result == 0) free_job(job);
 		} else {
-			job_table_insert(job);
+			int jobid = job_table_insert(job);
+			printf("[%d] %d STARTED \'%s\'\n", jobid, pid, pipeline->full_command);
 		}
 		sigprocmask(SIG_SETMASK, &oset, NULL);
 		sigstop_flag = 0;

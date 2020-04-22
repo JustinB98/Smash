@@ -104,6 +104,10 @@ static JOB *job_control_prereq(TASK *task) {
 	return get_job_from_table(jobid_str, cmd);
 }
 
+static void change_job_status_to_stopped(JOB *job) {
+	job_table_change_status(job->pid, STOPPED);
+}
+
 static int smash_fg(TASK *task) {
 	JOB *job = job_control_prereq(task);
 	if (job == NULL) return -1;
@@ -117,7 +121,7 @@ static int smash_fg(TASK *task) {
 	puts(job->pipeline->full_command);
 	tcsetpgrp(STDIN_FILENO, job->pid);
 	kill(-job->pid, SIGCONT);
-	int result = wait_for_process(job, &oset, NULL);
+	int result = wait_for_process(job, &oset, change_job_status_to_stopped);
 	sigprocmask(SIG_SETMASK, &oset, NULL);
 	if (result == 0) {
 		job_table_remove(job);
