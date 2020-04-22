@@ -8,6 +8,10 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <signal.h>
+#ifdef EXTRA_CREDIT
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
 
 #include "task.h"
 #include "pipeline.h"
@@ -18,6 +22,14 @@
 #include "job_table.h"
 #include "foreground_job.h"
 #include "debug.h"
+
+#define ON_ERROR_EXIT(to_run, perror_msg) \
+	if ((to_run) < 0) { \
+		perror(perror_msg); \
+		exit(EXIT_FAILURE); \
+	}
+
+
 
 void free_job(JOB *job) {
 	free_pipeline(job->pipeline);
@@ -126,9 +138,9 @@ static pid_t exe_command(TASK *task, int ifd, int ofd) {
 			close(ofd);
 			ofd = out_fd;
 		}
-		dup2(ifd, STDIN_FILENO);
-		dup2(ofd, STDOUT_FILENO);
-		dup2(error_fd, STDERR_FILENO);
+		ON_ERROR_EXIT(dup2(ifd, STDIN_FILENO), "dup2");
+		ON_ERROR_EXIT(dup2(ofd, STDOUT_FILENO), "dup2");
+		ON_ERROR_EXIT(dup2(error_fd, STDERR_FILENO), "dup2");
 		/* Doesn't return */
 		start_exec(task);
 	} else if (cpid < 0) {
@@ -223,63 +235,81 @@ void print_new_background_job(JOB *job) {
 }
 
 void start_pipeline(PIPELINE *pipeline, char *envp[]) {
-		int smash_command = 0;
+	int smash_command = 0;
 
-		if (pipeline->n_pipelines == 1) {
-			smash_command = execute_smash_command(pipeline_get_task(pipeline, 0));
-			if (smash_command != 0) {
-				free_pipeline(pipeline);
-				// set_exit_code(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-				return;
-			}
-		}
-		sigset_t set, oset;
-		sigfillset(&set);
-		sigprocmask(SIG_SETMASK, &set, &oset);
-		sigstop_flag = 0;
-		pid_t pid = fork();
-		if (pid < 0) {
-			perror("Could not spawn process");
-			sigprocmask(SIG_SETMASK, &oset, NULL);
+	if (pipeline->n_pipelines == 1) {
+		smash_command = execute_smash_command(pipeline_get_task(pipeline, 0));
+		if (smash_command != 0) {
+			free_pipeline(pipeline);
+			// set_exit_code(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 			return;
-		} else if (pid == 0) {
-			install_signal_handler(SIGTTIN, SIG_DFL);
-			install_signal_handler(SIGTTOU, SIG_DFL);
-			install_signal_handler(SIGINT, SIG_DFL);
-			install_signal_handler(SIGTSTP, SIG_DFL);
-			pid = getpid();
-			int ret = setpgid(pid, pid);
-			if (pipeline->fg) {
-				// tcsetpgrp(STDIN_FILENO, pid);
-			}
-			if (ret < 0) {
-				perror("Could not set pgid of child process");
-				abort();
-			}
-			// fprintf(stderr, "pg: %d pid: %d\n", getpgid(getpid()), getpid());
+		}
+	}
+	JOB *job = malloc(sizeof(JOB));
+	if (job == NULL) {
+		perror("Could not malloc for job");
+		return;
+	}
+	sigset_t set, oset;
+	sigfillset(&set);
+	if (sigprocmask(SIG_SETMASK, &set, &oset) < 0) {
+		perror("sigprocmask: Could not create child process");
+		return;
+	}
+	sigstop_flag = 0;
+	pid_t pid = fork();
+	if (pid < 0) {
+		perror("Could not spawn process");
+		if (sigprocmask(SIG_SETMASK, &oset, NULL) < 0) {
+			perror("sigprocmask failed... Program will not function normally");
+		}
+		return;
+	} else if (pid == 0) {
+		install_signal_handler(SIGTTIN, SIG_DFL);
+		install_signal_handler(SIGTTOU, SIG_DFL);
+		install_signal_handler(SIGINT, SIG_DFL);
+		install_signal_handler(SIGTSTP, SIG_DFL);
+		pid = getpid();
+		int ret = setpgid(pid, pid);
+		if (ret < 0) {
+			perror("Could not set pgid of child process");
+			abort();
+		}
+		// fprintf(stderr, "pg: %d pid: %d\n", getpgid(getpid()), getpid());
 #ifdef EXTRA_CREDIT
-			child_process_start_pipeline(pipeline, envp);
+		child_process_start_pipeline(pipeline, envp);
 #else
-			child_process_start_job(pipeline_get_task(pipeline, 0), envp);
+		child_process_start_job(pipeline_get_task(pipeline, 0), envp);
 #endif
-		}
-		setpgid(pid, pid);
-		print_debug_message("RUNNING: [%d] %s", pid, pipeline->full_command);
-		JOB *job = malloc(sizeof(JOB));
-		job->status_updated = 0;
-		/* TODO handle malloc error */
-		if (job == NULL) return;
-		job->pipeline = pipeline;
-		job->status = RUNNING;
-		job->pid = pid;
-		if (pipeline->fg) {
-			int result = wait_for_process(job, &oset, print_new_background_job);
-			if (result == 0) free_job(job);
-		} else {
-			int jobid = job_table_insert(job);
-			printf("[%d] %d STARTED \'%s\'\n", jobid, pid, pipeline->full_command);
-		}
-		sigprocmask(SIG_SETMASK, &oset, NULL);
-		sigstop_flag = 0;
+	}
+#ifdef EXTRA_CREDIT
+	if (gettimeofday(&job->starting_time, NULL) < 0) {
+		perror("Could not get current time");
+		memset(&job->starting_time, 0, sizeof(struct timeval));
+	}
+	if (getrusage(RUSAGE_CHILDREN, &job->starting_usage) < 0) {
+		perror("Could not get current program stats");
+		memset(&job->starting_usage, 0, sizeof(struct rusage));
+	}
+#endif
+	setpgid(pid, pid);
+	print_debug_message("RUNNING: [%d] %s", pid, pipeline->full_command);
+	job->status_updated = 0;
+	/* TODO handle malloc error */
+
+	job->pipeline = pipeline;
+	job->status = RUNNING;
+	job->pid = pid;
+	if (pipeline->fg) {
+		int result = wait_for_process(job, &oset, print_new_background_job);
+		if (result == 0) free_job(job);
+	} else {
+		int jobid = job_table_insert(job);
+		printf("[%d] %d STARTED \'%s\'\n", jobid, pid, pipeline->full_command);
+	}
+	if (sigprocmask(SIG_SETMASK, &oset, NULL) < 0) {
+		perror("sigprocmask: Program will not behave normally");
+	}
+	sigstop_flag = 0;
 }
 
