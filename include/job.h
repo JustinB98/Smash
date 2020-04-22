@@ -16,8 +16,9 @@ typedef struct job {
 	int exit_code;
 	int status_updated;
 #ifdef EXTRA_CREDIT
-	struct timeval starting_time;
-	struct rusage starting_usage;
+	int time_failed;
+	struct timeval starting_time, final_time;
+	struct rusage starting_usage, final_usage;
 #endif
 } JOB;
 
