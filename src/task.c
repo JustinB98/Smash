@@ -43,7 +43,7 @@ void task_print_all_args(TASK *task) {
 		}
 		current = current->next;
 	}
-	print_debug_message("Printed %d for echo command", words_printed);
+	print_debug_message("Printed %d words for echo command", words_printed);
 }
 
 char *task_get_command(TASK *task) {
