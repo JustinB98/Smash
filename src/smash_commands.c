@@ -6,6 +6,9 @@
 #include <limits.h>
 #include <pwd.h>
 #include <signal.h>
+#ifdef EXTRA_CREDIT
+#include <sys/resource.h>
+#endif
 
 #include "task.h"
 #include "pipeline.h"

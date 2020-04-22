@@ -4,6 +4,9 @@
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
+#ifdef EXTRA_CREDIT
+#include <sys/resource.h>
+#endif
 
 #include "input.h"
 #include "task.h"

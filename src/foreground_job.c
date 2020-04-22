@@ -4,6 +4,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#ifdef EXTRA_CREDIT
+#include <sys/resource.h>
+#endif
 
 #include "task.h"
 #include "pipeline.h"
