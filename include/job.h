@@ -15,6 +15,10 @@ typedef struct job {
 	pid_t pid;
 	int exit_code;
 	int status_updated;
+#ifdef EXTRA_CREDIT
+	struct timeval starting_time;
+	struct rusage starting_usage;
+#endif
 } JOB;
 
 void start_pipeline(PIPELINE *pipeline, char *envp[]);
