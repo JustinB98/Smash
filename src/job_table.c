@@ -1,7 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
+
 #ifdef EXTRA_CREDIT
+#include <sys/time.h>
+#include <sys/times.h>
 #include <sys/resource.h>
+#include "args.h"
 #endif
 
 #include "linked_list.h"
@@ -11,6 +15,7 @@
 #include "pipeline.h"
 #include "job.h"
 #include "debug.h"
+#include "job_table.h"
 
 static HASHTABLE *pid_table, *job_id_table;
 static QUEUE *job_id_queue;
@@ -77,16 +82,19 @@ static JOB *job_table_mark_as_finished(pid_t pid, JOB_STATUS status, int exit_co
 	JOB *job = job_table_change_status_of_job(pid, status);
 	if (job != NULL) {
 		job->exit_code = exit_code;
+#ifdef EXTRA_CREDIT
+		finalize_times(job);
+#endif
 	}
 	return job;
 }
 
-JOB *job_table_mark_as_done(pid_t pid, int exit_code) {
-	return job_table_mark_as_finished(pid, DONE, exit_code);
+void job_table_mark_as_done(pid_t pid, int exit_code) {
+	job_table_mark_as_finished(pid, DONE, exit_code);
 }
 
-JOB *job_table_mark_as_aborted(pid_t pid, int exit_code) {
-	return job_table_mark_as_finished(pid, ABORTED, exit_code);
+void job_table_mark_as_aborted(pid_t pid, int exit_code) {
+	job_table_mark_as_finished(pid, ABORTED, exit_code);
 }
 
 void job_table_change_status(pid_t pid, JOB_STATUS status) {
@@ -103,6 +111,43 @@ static void for_each_job(void (*job_consumer)(JOB *)) {
 	}
 }
 
+#ifdef EXTRA_CREDIT
+void finalize_times(JOB *job) {
+	if (!has_t_flag()) return;
+	if (job->time_failed) {
+		fprintf(stderr, "Since getting time for job already failed, the time for this job cannot be displayed\n");
+		return;
+	}
+	if (gettimeofday(&job->final_time, NULL) < 0) {
+		perror("gettimeofday failed... cannot get times");
+		job->time_failed = 1;
+		return;
+	}
+	if (getrusage(RUSAGE_CHILDREN, &job->final_usage) < 0) {
+		perror("getrusage failed... cannot get times");
+		return;
+	}
+}
+
+void print_times(JOB *job) {
+	if (!has_t_flag()) return;
+	if (job->time_failed) {
+		fprintf(stderr, "Since getting time for job already failed, the time for this job cannot be displayed\n");
+		return;
+	}
+	struct timeval final_time;
+	struct timeval final_utime, final_stime;
+	timersub(&job->final_time, &job->starting_time, &final_time);
+	timersub(&job->final_usage.ru_utime, &job->starting_usage.ru_utime, &final_utime);
+	timersub(&job->final_usage.ru_stime, &job->starting_usage.ru_stime, &final_stime);
+	printf("TIMES: real: %ld.%ld user: %ld.%ld sys: %ld.%ld\n",
+			final_time.tv_sec, final_time.tv_usec,
+			final_utime.tv_sec, final_utime.tv_usec,
+			final_stime.tv_sec, final_stime.tv_usec
+		  );
+}
+#endif
+
 static void print_and_remove_finished_job(JOB *job) {
 	if (!job->status_updated) return;
 	job->status_updated = 0;
@@ -111,8 +156,12 @@ static void print_and_remove_finished_job(JOB *job) {
 			job_status_names[job->status],
 			job->pipeline->full_command);
 	if (job->status != DONE && job->status != ABORTED) goto print_and_remove_finished_job_finish;
-	printf(" -------- Exit code: %d", job->exit_code);
+	printf(" -------- Exit code: %d\n", job->exit_code);
+#ifdef EXTRA_CREDIT
+	print_times(job);
+#endif
 	job_table_remove(job);
+	return;
 print_and_remove_finished_job_finish:
 	printf("\n");
 }

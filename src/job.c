@@ -285,10 +285,13 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 	if (gettimeofday(&job->starting_time, NULL) < 0) {
 		perror("Could not get current time");
 		memset(&job->starting_time, 0, sizeof(struct timeval));
-	}
-	if (getrusage(RUSAGE_CHILDREN, &job->starting_usage) < 0) {
+		job->time_failed = 1;
+	} else if (getrusage(RUSAGE_CHILDREN, &job->starting_usage) < 0) {
 		perror("Could not get current program stats");
 		memset(&job->starting_usage, 0, sizeof(struct rusage));
+		job->time_failed = 1;
+	} else {
+		job->time_failed = 0;
 	}
 #endif
 	if (setpgid(pid, pid) < 0) {

@@ -82,6 +82,10 @@ wait_for_process_skip_suspend:
 						exit_code);
 				set_exit_code(exit_code);
 				give_terminal_back_to_smash();
+#ifdef EXTRA_CREDIT
+				finalize_times(job);
+				print_times(job);
+#endif
 				return 0;
 			}
 		}
