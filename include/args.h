@@ -9,4 +9,8 @@ char *get_file_input();
 
 int has_d_flag();
 
+#ifdef EXTRA_CREDIT
+int has_t_flag();
+#endif
+
 #endif /* ARGS_H */
