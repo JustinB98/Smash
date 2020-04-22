@@ -23,6 +23,11 @@ test_name="wc Test"
 cmp test_file <(wc ./smash)
 $assert_success
 
+test_name="git status Test"
+./smash <(echo git status) > test_file
+cmp test_file <(git status)
+$assert_success
+
 printf "==================== TEST02.SH END ====================\n"
 test_type="test02.sh"
 rm test_file
