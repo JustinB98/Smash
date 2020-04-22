@@ -1,1 +1,54 @@
-Empty template and README for HW3
+Justin Behrman
+
+./
+├── src/
+│   ├── task.c
+│   ├── smash_commands.c
+│   ├── signal_handlers.c
+│   ├── queue.c
+│   ├── pipeline.c
+│   ├── parser.c
+│   ├── metadata.c
+│   ├── main.c
+│   ├── linked_list.c
+│   ├── job_table.c
+│   ├── job.c
+│   ├── input.c
+│   ├── hashtable.c
+│   ├── foreground_job.c
+│   ├── exit_code.c
+│   ├── debug.c
+│   └── args.c
+├── shell_tests/
+│   ├── reg_tests/
+│   │   ├── test04.sh
+│   │   ├── test03.sh
+│   │   ├── test02.sh
+│   │   └── test01.sh
+│   ├── finish.sh
+│   ├── ec_tests/
+│   │   ├── test06.sh
+│   │   └── test05.sh
+│   ├── assert_unsuccessful_exit.sh
+│   ├── assert_successful_exit.sh
+│   └── assert_exit_code.sh
+├── include/
+│   ├── task.h
+│   ├── smash_commands.h
+│   ├── signal_handlers.h
+│   ├── queue.h
+│   ├── pipeline.h
+│   ├── parser.h
+│   ├── metadata.h
+│   ├── linked_list.h
+│   ├── job_table.h
+│   ├── job.h
+│   ├── input.h
+│   ├── hashtable.h
+│   ├── foreground_job.h
+│   ├── exit_code.h
+│   ├── debug.h
+│   └── args.h
+├── README
+└── Makefile
+
