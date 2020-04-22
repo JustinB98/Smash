@@ -3,8 +3,10 @@
 
 #define PROGRAM_NAME "smash"
 
-void metadata_init();
+void metadata_init(FILE *file);
 
 pid_t get_smash_pid();
+
+int is_interactive();
 
 #endif /* METADATA_H */

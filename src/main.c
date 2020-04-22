@@ -21,6 +21,8 @@
 #include "parser.h"
 #include "metadata.h"
 
+#if 0
+/* Only kept for debugging */
 void print_task_info(TASK *task) {
 	WORD_LIST *list = task->word_list;
 	while (list) {
@@ -32,6 +34,7 @@ void print_task_info(TASK *task) {
 	printf("stdout: %s\n", task->stdout_path);
 	printf("stderr: %s\n", task->stderr_path);
 }
+#endif
 
 static FILE *open_file_input() {
 	FILE *file = fopen(get_file_input(), "r");
@@ -42,25 +45,55 @@ static FILE *open_file_input() {
 	return file;
 }
 
-int main(int argc, char *argv[], char *env[]) {
-	process_args(argc, argv);
-	metadata_init();
+static void init(size_t *n, char **buf) {
+	if (!is_interactive()) goto init_data;
+	/* Take care of process stuff */
+	if (setsid() < 0 && errno != EPERM) {
+		/* Not a big deal, but should be noted to user */
+		perror("Could not set smash as session leader");
+	}
+	if (setpgid(getpid(), getpid()) < 0) {
+		/* Again, not a big deal. Some features might now work */
+		perror("Could not move smash into its own process group");
+	}
+	if (tcsetpgrp(STDIN_FILENO, getpid()) < 0) {
+		perror("Could not give smash terminal access");
+	}
+
+init_data:
+	/* Init our data structures */
 	job_table_init();
-	size_t n = getpagesize();
-	char *buf = malloc(n);
-	int result = 0;
 	signal_handlers_init();
-	PIPELINE *pipeline = NULL;
+	*n = getpagesize();
+	if (*n < 0) {
+		fprintf(stderr, "Could not grab system page size, exiting...");
+		exit(EXIT_FAILURE);
+	}
+	*buf = malloc(*n);
+	if (*buf == NULL) {
+		fprintf(stderr, "Could not malloc a buffer for input. Exiting...\n");
+		exit(EXIT_FAILURE);
+	}
+}
+
+int main(int argc, char *argv[], char *env[]) {
+	int result = 0;
+	process_args(argc, argv);
 	FILE *file_input = has_file_input() ? open_file_input() : stdin;
+	metadata_init(file_input);
+	size_t n;
+	char *buf;
+	init(&n, &buf);
+	PIPELINE *pipeline = NULL;
 	int exit_code = 0;
 	int exit_smash = 0;
-	setsid();
-	setpgid(getpid(), getpid());
-	tcsetpgrp(STDIN_FILENO, getpid());
 	while (1) {
-		if (file_input == stdin) {
+		if (is_interactive()) {
 			printf("smash> ");
-			fflush(stdout);
+			if (fflush(stdout) < 0) {
+				/* Worst case, user won't see prompt */
+				perror("fflush");
+			}
 		}
 		errno = 0;
 		result = get_input(file_input, &buf, &n, child_reaper);
@@ -70,7 +103,9 @@ int main(int argc, char *argv[], char *env[]) {
 		}
 		/* File input needs to be flushed because appearently the new line from it */
 		/* messes with reading it */
-		fflush(file_input);
+		if (fflush(file_input) < 0) {
+			perror("Could not flush input file");
+		}
 		pipeline = parse_pipeline(buf);
 		if (pipeline == PIPELINE_EMPTY) goto end_of_main_loop;
 		else if (pipeline == PIPELINE_FAILED) {
@@ -91,8 +126,13 @@ end_of_main_loop:
 		print_and_remove_finished_jobs();
 	}
 	job_table_fini();
-	if (file_input != stdin) fclose(file_input);
+	if (!is_interactive()) {
+		if (fclose(file_input) < 0) {
+			perror("Could not close input file");
+			exit_code = EXIT_FAILURE;
+		}
+	}
 	free(buf);
-	if (result < 0 && file_input == stdin) puts("exit");
+	if (result < 0 && is_interactive()) puts("exit");
 	return exit_code;
 }
