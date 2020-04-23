@@ -16,6 +16,8 @@
 #include <unistd.h>
 #endif
 
+static TASK *parse_task(char *string_to_parse);
+
 static int allocate_task_variables(TASK **task, char **string_to_parse) {
 	*task = malloc(sizeof(TASK));
 	if (*task == NULL) goto free_task;
@@ -37,6 +39,7 @@ static char *get_exit_code_str() {
 	char *exit_code_str = malloc(10);
 	if (exit_code_str == NULL) return NULL;
 	if (sprintf(exit_code_str, "%d", get_exit_code()) < 0) {
+		perror("Exit code cannot be convert to a string");
 		free(exit_code_str);
 		exit_code_str = NULL;
 	}
@@ -171,7 +174,6 @@ parse_pipeline_finish:
 	return pipeline;
 }
 
-
 #endif
 
 static char *process_word(char *word) {
@@ -197,7 +199,7 @@ static int handle_redirection(TASK *task, char *token) {
 	return 0;
 }
 
-TASK *parse_task(char *string_to_parse) {
+static TASK *parse_task(char *string_to_parse) {
 	TASK *task;
 	WORD_LIST **word_list;
 	char *s = string_to_parse;
@@ -248,5 +250,4 @@ parse_task_failed:
 	free_task(task);
 	return TASK_FAILED;
 }
-
 
