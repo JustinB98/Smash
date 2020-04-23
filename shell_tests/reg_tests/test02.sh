@@ -14,8 +14,8 @@ cmp test_file <(ls)
 $assert_success
 
 test_name="ls Test 2"
-./smash <(echo ls /tmp -al) > test_file
-cmp test_file <(ls /tmp -al)
+./smash <(echo ls / -al) > test_file
+cmp test_file <(ls / -al)
 $assert_success
 
 test_name="wc Test"
