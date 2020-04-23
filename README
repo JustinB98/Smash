@@ -165,6 +165,13 @@ To run just the extra credit tests, run one of the two:
 * Background jobs are stored in two hashtables. One hashtable is to look up given a pid and the other from the jobid
 * Jobids are generated using a priority queue that acts like bash
 
+# Pipelines
+Pipelines for smash work in the follow way:
+1. Fork a child. This child will manage the pipeline
+2. Have the child move itself into its own process group. Have the parent and child do this to avoid race conditions. Also tcsetpgrp(3) for both parent and child if the pipeline is in the foreground
+3. Have the child loop through the tasks and manage dup(2). Fork new children to run each task. Have the children have the same process group.
+4. Once all tasks have been given a new process to run on, wait for all of them to finish, then exit with the exit code of the process that was started last
+
 # Timing
 * If the program is the extra credit program and is ran with the -t flag, the times will be displayed after the job ran if it was a foreground job, or along with the status if the job was a background job.
 * If getting the times fails, (gettimeofday(2) fails or getrusage(2) fails) then a message will be printed saying that the times could not been seen.
