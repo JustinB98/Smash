@@ -168,3 +168,8 @@ To run just the extra credit tests, run one of the two:
 # Timing
 * If the program is the extra credit program and is ran with the -t flag, the times will be displayed after the job ran if it was a foreground job, or along with the status if the job was a background job.
 * If getting the times fails, (gettimeofday(2) fails or getrusage(2) fails) then a message will be printed saying that the times could not been seen.
+
+# Other Notes
+* cd by itself will go to the directory $HOME
+* echo and pwd are implemented as builtins. The /bin programs can only be used with /bin/echo and /bin/pwd
+
