@@ -122,6 +122,8 @@ To run just the extra credit tests, run one of the two:
 2. make clean run_ec_tests 
 
 # Parsing Rules:
+* Input
+  * Input can be as long as getline permits (using realloc(3))
 * Redirection
   * has to be in the form of >file <file or 2>file
   * It must be attached to the symbol
