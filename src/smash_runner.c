@@ -168,11 +168,14 @@ static void wait_for_pipeline_to_end(pid_t cpids[], size_t n_pipelines) {
 	int exit_status = 0;
 	pid_t last_pid = cpids[n_pipelines - 1];
 	while (n_pipelines > 0) {
+		/* Atomically change the process's signal mask to unblock all signals */
 		sigsuspend(&empty_set);
 		if (sigchld_flag) {
 			pid_t rpid;
 			int wstatus;
 			while ((rpid = waitpid(-1, &wstatus, WNOHANG)) > 0) {
+				/* Bash exits with the exit code of the last task in the pipeline */
+				/* NOT the last task that finished */
 				if (rpid == last_pid) {
 					exit_status = WEXITSTATUS(wstatus);
 				}
