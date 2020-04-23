@@ -57,7 +57,7 @@ Justin Behrman
 * task.c - Accessors for the Task struct
 * smash_commands.c - Functions that deal with builtin commands
 * signal_handlers.c - Module that sets up signal handlers and maintains flags, as well as having a function that reap children processes and attempts to update them in the job table
-* queue.c - Priority queue that is built on top of a linked list in order to maintain job numbers
+* queue.c - Priority queue that is built like as linked list in order to maintain job numbers
 * pipeline.c - Functions that deal with the Pipeline struct
 * parser.c - Module that contains a parse function to parse user input and will return a pipeline struct
 * metadata.c - Module that contains smash's original pid as well as if it's running in interactive mode. Must be initialized.
