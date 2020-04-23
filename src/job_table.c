@@ -140,7 +140,7 @@ void print_times(JOB *job) {
 	timersub(&job->final_time, &job->starting_time, &final_time);
 	timersub(&job->final_usage.ru_utime, &job->starting_usage.ru_utime, &final_utime);
 	timersub(&job->final_usage.ru_stime, &job->starting_usage.ru_stime, &final_stime);
-	printf("TIMES: real: %ld.%ld user: %ld.%ld sys: %ld.%ld\n",
+	printf("TIMES: real: %ld.%lds user: %ld.%lds sys: %ld.%lds\n",
 			final_time.tv_sec, final_time.tv_usec,
 			final_utime.tv_sec, final_utime.tv_usec,
 			final_stime.tv_sec, final_stime.tv_usec
