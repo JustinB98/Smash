@@ -160,6 +160,9 @@ To run just the extra credit tests, run one of the two:
 # Background jobs 
 * Background jobs will be notified to the user after the next command they type. This is to avoid problems with too many things being displayed to stdout at once. A job will be removed from the table and have its memory freed only if the user presses enter or runs another command. Running the "jobs" command will print the finished jobs if they are finished and remove them.
 * If a background program request stdin, they will be sent a SIGTTIN signal. This is due to the nature of tcsetpgrp(3). This also means if the program is ran in batch mode, background jobs may not work properly, although still possible
+* Background jobs are stored in two hashtables. One hashtable is to look up given a pid and the other from the jobid
+* Jobids are generated using a priority queue that acts like bash
 
 # Timing
 * If the program is the extra credit program and is ran with the -t flag, the times will be displayed after the job ran if it was a foreground job, or along with the status if the job was a background job.
+* If getting the times fails, (gettimeofday(2) fails or getrusage(2) fails) then a message will be printed saying that the times could not been seen.
