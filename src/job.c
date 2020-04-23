@@ -13,6 +13,7 @@
 #include <sys/resource.h>
 #endif
 
+#include "metadata.h"
 #include "task.h"
 #include "pipeline.h"
 #include "job.h"
@@ -104,7 +105,7 @@ static void start_exec(TASK *task){
 	sigemptyset(&set);
 	sigprocmask(SIG_SETMASK, &set, NULL);
 	if (execvp(argv[0], argv) < 0) {
-		fprintf(stderr, "Could not find program: %s\n", argv[0]);
+		fprintf(stderr, "%s: %s\n", argv[0], strerror(errno));
 		/* Standard terminal error for commands not found */
 		exit(127);
 	}
@@ -269,10 +270,12 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		install_signal_handler(SIGINT, SIG_DFL);
 		install_signal_handler(SIGTSTP, SIG_DFL);
 		pid = getpid();
-		int ret = setpgid(pid, pid);
-		if (ret < 0) {
+		if (setpgid(pid, pid) < 0) {
 			perror("Could not set pgid of child process");
 			abort();
+		}
+		if (is_interactive() && tcsetpgrp(STDIN_FILENO, pid) < 0) {
+			perror("Could not set child process to foreground of terminal");
 		}
 		// fprintf(stderr, "pg: %d pid: %d\n", getpgid(getpid()), getpid());
 #ifdef EXTRA_CREDIT
