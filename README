@@ -104,5 +104,62 @@ Justin Behrman
 * assert_successful_exit.sh - Asserts the last command was successful (exit code == 0)
 * assert_unsuccessful_exit.sh - Asserts the last command was unsuccessful (exit code != 0)
 
-# Makefile
+# Makefile Rules
+* all - Builds the smash program
+* clean - Removes the build directory (all .o and .d files) as well as the smash program
+* ec - Compiles each file with -DEXTRA_CREDIT
+* tests - Recompiles smash and runs the regular tests. Then recompiles with -DEXTRA_CREDIT and runs the extra credit tests
+* run_reg_test - Just run the regular tests without compiling
+* run_ec_tests - Run the extra credit tests without compiling
 
+## Makefile Notes
+To run just the regular tests and compile, run one of the two:
+1. make clean all run_reg_tests
+2. make clean run_reg_tests
+
+To run just the extra credit tests, run one of the two:
+1. make clean ec run_ec_tests
+2. make clean run_ec_tests 
+
+# Parsing Rules:
+* Redirection
+  * has to be in the form of >file <file or 2>file
+  * It must be attached to the symbol
+  * It can be anywhere in the input. For example, for the input ls >output.txt / , ls / will run and the output will go to output.txt. This goes for the rest of the redirection symbols
+  * If the same redirection symbol is repeated twice, the later one will be used and the previous will be overwritten
+
+* Background jobs
+  * A job can be put in the background by attaching & as a separate argument at the end of the input
+  * If a command such as ls & / was given, ls would receieve & and / as arguments
+
+* Spaces are trimmed
+
+# Parsing Rules for Extra Credit
+
+* Redirection
+  * Similar to the regular program except it is valid inside a pipeline. For example:
+  	  ls -al >output | grep a
+    Will write ls output to the file "output" and grep will read from a closed stdin and exit with 1 because grep found nothing (It will not exit with 2 since there should be no I/O errors)
+
+* Background jobs
+  * A background job is only honored if the & is the very last argument of the pipeline. For example:
+      ls -al & | grep c
+	is the same as:
+	  ls -al | grep c
+
+* Empty Pipelines
+  * Empty Pipelines are ignored
+    * ||| is ignored
+	* ls -al || ||| grep c ||| is the same as ls -al | grep c
+
+* Globbing
+  * glob(3) was not used in this project
+  * Globbing only works in the current directory (src/*.c would not work)
+  * If the extension could not be found, then the original string would be used. For example, if *.h did not match anything, then the argument will remain at *.h.
+
+# Background jobs 
+* Background jobs will be notified to the user after the next command they type. This is to avoid problems with too many things being displayed to stdout at once. A job will be removed from the table and have its memory freed only if the user presses enter or runs another command. Running the "jobs" command will print the finished jobs if they are finished and remove them.
+* If a background program request stdin, they will be sent a SIGTTIN signal. This is due to the nature of tcsetpgrp(3). This also means if the program is ran in batch mode, background jobs may not work properly, although still possible
+
+# Timing
+* If the program is the extra credit program and is ran with the -t flag, the times will be displayed after the job ran if it was a foreground job, or along with the status if the job was a background job.
