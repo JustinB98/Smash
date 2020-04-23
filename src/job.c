@@ -28,23 +28,49 @@ void free_job(JOB *job) {
 	free(job);
 }
 
-void print_new_background_job(JOB *job) {
+static void print_new_background_job(JOB *job) {
 	print_debug_message("Inserting foreground job into background");
 	job_table_insert(job);
 	job_table_change_status(job->pid, STOPPED);
 }
 
-void start_pipeline(PIPELINE *pipeline, char *envp[]) {
-	int smash_command = 0;
-
+/* Return 0 if smash command, -1 if not */
+static int try_smash_command(PIPELINE *pipeline) {
 	if (pipeline->n_pipelines == 1) {
-		smash_command = execute_smash_command(pipeline_get_task(pipeline, 0));
+		int smash_command = execute_smash_command(pipeline_get_task(pipeline, 0));
 		if (smash_command != 0) {
 			free_pipeline(pipeline);
-			// set_exit_code(smash_command < 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-			return;
+			return 0;
 		}
 	}
+	return -1;
+}
+
+static void reset_signal_handlers() {
+	install_signal_handler(SIGTTIN, SIG_DFL);
+	install_signal_handler(SIGTTOU, SIG_DFL);
+	install_signal_handler(SIGINT, SIG_DFL);
+	install_signal_handler(SIGTSTP, SIG_DFL);
+}
+
+#ifdef EXTRA_CREDIT
+void fill_time_fields(JOB *job) {
+	if (gettimeofday(&job->starting_time, NULL) < 0) {
+		perror("Could not get current time");
+		memset(&job->starting_time, 0, sizeof(struct timeval));
+		job->time_failed = 1;
+	} else if (getrusage(RUSAGE_CHILDREN, &job->starting_usage) < 0) {
+		perror("Could not get current program stats");
+		memset(&job->starting_usage, 0, sizeof(struct rusage));
+		job->time_failed = 1;
+	} else {
+		job->time_failed = 0;
+	}
+}
+#endif
+
+void start_pipeline(PIPELINE *pipeline, char *envp[]) {
+	if (try_smash_command(pipeline) == 0) return;
 	JOB *job = malloc(sizeof(JOB));
 	if (job == NULL) {
 		perror("Could not malloc for job");
@@ -65,10 +91,7 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		}
 		return;
 	} else if (pid == 0) {
-		install_signal_handler(SIGTTIN, SIG_DFL);
-		install_signal_handler(SIGTTOU, SIG_DFL);
-		install_signal_handler(SIGINT, SIG_DFL);
-		install_signal_handler(SIGTSTP, SIG_DFL);
+		reset_signal_handlers();
 		pid = getpid();
 		if (setpgid(pid, pid) < 0) {
 			perror("Could not set pgid of child process");
@@ -77,7 +100,6 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 		if (is_interactive() && tcsetpgrp(STDIN_FILENO, pid) < 0) {
 			perror("Could not set child process to foreground of terminal");
 		}
-		// fprintf(stderr, "pg: %d pid: %d\n", getpgid(getpid()), getpid());
 #ifdef EXTRA_CREDIT
 		child_process_start_job(pipeline);
 #else
@@ -85,26 +107,15 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 #endif
 	}
 #ifdef EXTRA_CREDIT
-	if (gettimeofday(&job->starting_time, NULL) < 0) {
-		perror("Could not get current time");
-		memset(&job->starting_time, 0, sizeof(struct timeval));
-		job->time_failed = 1;
-	} else if (getrusage(RUSAGE_CHILDREN, &job->starting_usage) < 0) {
-		perror("Could not get current program stats");
-		memset(&job->starting_usage, 0, sizeof(struct rusage));
-		job->time_failed = 1;
-	} else {
-		job->time_failed = 0;
-	}
+	fill_time_fields(job);
 #endif
 	if (setpgid(pid, pid) < 0) {
 		/* Possible that child cannot set it either, in which case the child will abort itself */
 		perror("Could not set forked child's pgid");
 	}
 	print_debug_message("RUNNING: [%d] %s", pid, pipeline->full_command);
+	/* Fill job fields */
 	job->status_updated = 0;
-	/* TODO handle malloc error */
-
 	job->pipeline = pipeline;
 	job->status = RUNNING;
 	job->pid = pid;
