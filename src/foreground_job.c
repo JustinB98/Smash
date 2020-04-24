@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <errno.h>
 #ifdef EXTRA_CREDIT
 #include <sys/resource.h>
 #endif
@@ -75,6 +76,9 @@ static int onSigChld(JOB *job, pid_t pid, void (*onStop)(JOB *)) {
 	print_debug_message("Received SIGCHLD signal while waiting for foreground process");
 	int exit_status;
 	pid_t wait_pid_result = waitpid(pid, &exit_status, WNOHANG | WUNTRACED);
+	if (wait_pid_result < 0 && errno != ECHILD) {
+		perror("waitpid");
+	}
 	print_debug_message("Tried to reap foreground process. Result: %d", wait_pid_result);
 	child_reaper();
 	if (wait_pid_result == pid) {

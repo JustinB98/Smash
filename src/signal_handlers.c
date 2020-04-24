@@ -77,6 +77,9 @@ void reap_children() {
 	while ((rpid = waitpid(-1, &wstatus, WNOHANG | WUNTRACED | WCONTINUED)) > 0) {
 		update_child(rpid, wstatus);
 	}
+	if (rpid < 0 && errno != ECHILD) {
+		perror("waitpid");
+	}
 }
 
 void child_reaper() {

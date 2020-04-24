@@ -181,6 +181,9 @@ static void wait_for_pipeline_to_end(pid_t cpids[], size_t n_pipelines) {
 				}
 				--n_pipelines;
 			}
+			if (rpid < 0 && errno != ECHILD) {
+				perror("waitpid");
+			}
 		}
 		sigchld_flag = 0;
 	}
