@@ -180,4 +180,5 @@ Pipelines for smash work in the follow way:
 # Other Notes
 * cd by itself will go to the directory $HOME
 * echo and pwd are implemented as builtins. The /bin programs can only be used with /bin/echo and /bin/pwd
-
+* Running a builtin command in the background is not possible. It will be ignored
+* Running a builtin command that deals with the job table (such as jobs, fg and bg) in a pipeline will be ignored and prints a message saying job control not possible
