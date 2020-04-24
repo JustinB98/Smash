@@ -175,6 +175,7 @@ Pipelines for smash work in the follow way:
 # Timing
 * If the program is the extra credit program and is ran with the -t flag, the times will be displayed after the job ran if it was a foreground job, or along with the status if the job was a background job.
 * If getting the times fails, (gettimeofday(2) fails or getrusage(2) fails) then a message will be printed saying that the times could not been seen.
+* Times may be slightly off because the times are started when the process gets forked, so if it takes time to run the pipeline.
 
 # Other Notes
 * cd by itself will go to the directory $HOME
