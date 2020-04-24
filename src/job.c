@@ -97,9 +97,6 @@ void start_pipeline(PIPELINE *pipeline, char *envp[]) {
 			perror("Could not set pgid of child process");
 			abort();
 		}
-		if (is_interactive() && tcsetpgrp(STDIN_FILENO, pid) < 0) {
-			perror("Could not set child process to foreground of terminal");
-		}
 #ifdef EXTRA_CREDIT
 		child_process_start_job(pipeline);
 #else
