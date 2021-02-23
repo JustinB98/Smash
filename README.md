@@ -1,4 +1,4 @@
-Justin Behrman
+# Smash
 
 ```
 Smash/
@@ -143,16 +143,18 @@ To run just the extra credit tests, run one of the two:
 * Redirection
   * Similar to the regular program except it is valid inside a pipeline. For example:
 ```
-  	  ls -al >output | grep a
+ls -al >output | grep a
 ```
-    Will write ls output to the file "output" and grep will read from a closed stdin and exit with 1 because grep found nothing (It will not exit with 2 since there should be no I/O errors)
+Will write ls output to the file "output" and grep will read from a closed stdin and exit with 1 because grep found nothing (It will not exit with 2 since there should be no I/O errors)
 
 * Background jobs
   * A background job is only honored if the & is the very last argument of the pipeline. For example:
 ```
 ls -al & | grep c
 ```
-	is the same as:
+
+is the same as:
+
 ```
 ls -al | grep c
 ```
